@@ -16,6 +16,6 @@ For API docs and examples see http://godoc.org/github.com/looplab/fsm
 
 ## License
 
-Salut is licensed under Apache License 2.0
+FSM is licensed under Apache License 2.0
 
 http://www.apache.org/licenses/LICENSE-2.0
