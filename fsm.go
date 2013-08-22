@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package fms implements a finite state machine
+// Package fms implements a finite state machine.
 //
 // It is heavily based on two FSM implementations:
 //
@@ -29,9 +29,11 @@ import (
 	"strings"
 )
 
-// FSM is the state machine and has to be created with NewFSM
+// FSM is the state machine that holds the current state.
+//
+// It has to be created with NewFSM to function properly.
 type FSM struct {
-	// current is the state that the FSM is currently in
+	// current is the state that the FSM is currently in.
 	current string
 
 	// transitions maps events and source states to destination states.
@@ -45,7 +47,8 @@ type FSM struct {
 	transition func()
 }
 
-// Event is the info that get passed as a reference in the callbacks
+// Event is the info that get passed as a reference in the callbacks.
+//
 // It contins the FSM calling it, event name, source and destination states.
 type Event struct {
 	FSM      *FSM
@@ -62,7 +65,8 @@ func (e *Event) Cancel() {
 	e.canceled = true
 }
 
-// Async can be called in leave_<STATE> to do an asynchronous state transition
+// Async can be called in leave_<STATE> to do an asynchronous state transition.
+//
 // The current state transition will be on hold in the old state until a final
 // call to Transition is made. This will comlete the transition and possibly
 // call the other callbacks.
@@ -70,16 +74,16 @@ func (e *Event) Async() {
 	e.async = true
 }
 
-// Events is a shorthand for defining the transition map in NewFSM
+// Events is a shorthand for defining the transition map in NewFSM.
 type Events []EventDesc
 
-// EventDesc represents an event in the FSM
+// EventDesc represents an event when initializing the FSM.
 //
 // The event can have one or more source states that is valid for performing
 // the transition. If the FSM is in one of the source states it will end up in
-// the specified destination state.
+// the specified destination state, calling all defined callbacks as it goes.
 type EventDesc struct {
-	// Name is the event name used when calling for a transition
+	// Name is the event name used when calling for a transition.
 	Name string
 
 	// Src is a slice of source states that the FSM must be in to perform a
@@ -91,13 +95,14 @@ type EventDesc struct {
 	Dst string
 }
 
-// Callbacks is a shorthand for defining the callbacks in NewFSM
+// Callbacks is a shorthand for defining the callbacks in NewFSM.a
 type Callbacks map[string]Callback
 
-// Callback is a function type that callbacks should use. Event is the current event info as the callback happens.
+// Callback is a function type that callbacks should use. Event is the current
+// event info as the callback happens.
 type Callback func(*Event)
 
-// Type of callback used in the internal mapping to functions
+// Type of callback used in the internal mapping to functions.
 type callbackType int
 
 const (
@@ -108,27 +113,27 @@ const (
 	afterEvent
 )
 
-// cKey is a struct key used for keeping the callbacks mapped to a target
+// cKey is a struct key used for keeping the callbacks mapped to a target.
 type cKey struct {
 	// target is either the name of a state or an event depending on which
 	// callback type the key refers to. It can also be "" for a non-targeted
-	// callback like before_event
+	// callback like before_event.
 	target string
 
-	// callbackType is the situation when the callback will be run
+	// callbackType is the situation when the callback will be run.
 	callbackType callbackType
 }
 
-// eKey is a struct key used for storing the transition map
+// eKey is a struct key used for storing the transition map.
 type eKey struct {
-	// event is the name of the event that the keys refers to
+	// event is the name of the event that the keys refers to.
 	event string
 
-	// src is the source from where the event can transition
+	// src is the source from where the event can transition.
 	src string
 }
 
-// NewFSM constructs a FSM from events and callbacks
+// NewFSM constructs a FSM from events and callbacks.
 //
 // The events and transitions are specified as a slice of Event structs
 // specified as Events. Each Event is mapped to one or more internal
@@ -153,18 +158,24 @@ type eKey struct {
 //
 // 8. after_event - called after all events
 //
-// There are also two short form versions for the most commonly used callbacks:
+// There are also two short form versions for the most commonly used callbacks.
+// They are simply the name of the event or state:
 //
-// <NEW_STATE> - called after entering <NEW_STATE>
+// 1. <NEW_STATE> - called after entering <NEW_STATE>
+
+// 2. <EVENT> - called after event named <EVENT>
 //
-// <EVENT> - called after event named <EVENT>
+// If both a shorthand version and a full version is specified it is undefined
+// which version of the callback will end up in the internal map. This is due
+// to the psuedo random nature of Go maps. No checking for multiple keys is
+// currently performed.
 func NewFSM(initial string, events Events, callbacks Callbacks) *FSM {
 	var f FSM
 	f.current = initial
 	f.transitions = make(map[eKey]string)
 	f.callbacks = make(map[cKey]Callback)
 
-	// Build transition map and store sets of all events and states
+	// Build transition map and store sets of all events and states.
 	allEvents := make(map[string]bool)
 	allStates := make(map[string]bool)
 	for _, e := range events {
@@ -176,7 +187,7 @@ func NewFSM(initial string, events Events, callbacks Callbacks) *FSM {
 		allEvents[e.Name] = true
 	}
 
-	// Map all callbacks to events/states
+	// Map all callbacks to events/states.
 	for name, c := range callbacks {
 		var target string
 		var cType callbackType
@@ -261,7 +272,7 @@ func (f *FSM) Cannot(event string) bool {
 //
 // - event X inappropriate in current state Y
 //
-// - transition innapropriate because no state change in progress
+// - internal error on state transition
 //
 // The last error should never occur in this situation and is a sign of an
 // internal bug.
