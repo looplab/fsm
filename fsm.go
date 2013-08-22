@@ -162,7 +162,7 @@ type eKey struct {
 // They are simply the name of the event or state:
 //
 // 1. <NEW_STATE> - called after entering <NEW_STATE>
-
+//
 // 2. <EVENT> - called after event named <EVENT>
 //
 // If both a shorthand version and a full version is specified it is undefined
