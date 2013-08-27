@@ -14,6 +14,33 @@ https://github.com/oxplot/fysom (forked at https://github.com/mriehl/fysom)
 
 For API docs and examples see http://godoc.org/github.com/looplab/fsm
 
+## Example
+
+    fsm := NewFSM(
+        "closed",
+        Events{
+            {Name: "open", Src: []string{"closed"}, Dst: "open"},
+            {Name: "close", Src: []string{"open"}, Dst: "closed"},
+        },
+        Callbacks{},
+    )
+    
+    fmt.Println(fsm.Current())
+    
+    err := fsm.Event("open")
+    if err != nil {
+        fmt.Println(err)
+    }
+    
+    fmt.Println(fsm.Current())
+    
+    err = fsm.Event("close")
+    if err != nil {
+        fmt.Println(err)
+    }
+    
+    fmt.Println(fsm.Current())
+
 ## License
 
 FSM is licensed under Apache License 2.0
