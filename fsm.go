@@ -55,6 +55,7 @@ type Event struct {
 	Event    string
 	Src      string
 	Dst      string
+	Err      error
 	canceled bool
 	async    bool
 }
@@ -290,19 +291,19 @@ func (f *FSM) Event(event string) error {
 		return nil
 	}
 
-	e := &Event{f, event, f.current, dst, false, false}
+	e := &Event{f, event, f.current, dst, nil, false, false}
 
 	// Call the before_ callbacks, first the named then the general version.
 	if fn, ok := f.callbacks[cKey{event, beforeEvent}]; ok {
 		fn(e)
 		if e.canceled {
-			return nil
+			return e.Err
 		}
 	}
 	if fn, ok := f.callbacks[cKey{"", beforeEvent}]; ok {
 		fn(e)
 		if e.canceled {
-			return nil
+			return e.Err
 		}
 	}
 
@@ -332,18 +333,18 @@ func (f *FSM) Event(event string) error {
 		fn(e)
 		if e.canceled {
 			f.transition = nil
-			return nil
+			return e.Err
 		} else if e.async {
-			return nil
+			return e.Err
 		}
 	}
 	if fn, ok := f.callbacks[cKey{"", leaveState}]; ok {
 		fn(e)
 		if e.canceled {
 			f.transition = nil
-			return nil
+			return e.Err
 		} else if e.async {
-			return nil
+			return e.Err
 		}
 	}
 
@@ -353,7 +354,7 @@ func (f *FSM) Event(event string) error {
 		return fmt.Errorf("internal error on state transition")
 	}
 
-	return nil
+	return e.Err
 }
 
 // Transition completes an asynchrounous state change.

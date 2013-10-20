@@ -374,6 +374,41 @@ func TestAsyncTransitionNotInProgress(t *testing.T) {
 	}
 }
 
+func TestCallbackNoError(t *testing.T) {
+	fsm := NewFSM(
+		"start",
+		Events{
+			{Name: "run", Src: []string{"start"}, Dst: "end"},
+		},
+		Callbacks{
+			"run": func(e *Event) {
+			},
+		},
+	)
+	e := fsm.Event("run")
+	if e != nil {
+		t.FailNow()
+	}
+}
+
+func TestCallbackError(t *testing.T) {
+	fsm := NewFSM(
+		"start",
+		Events{
+			{Name: "run", Src: []string{"start"}, Dst: "end"},
+		},
+		Callbacks{
+			"run": func(e *Event) {
+				e.Err = fmt.Errorf("error")
+			},
+		},
+	)
+	e := fsm.Event("run")
+	if e.Error() != "error" {
+		t.FailNow()
+	}
+}
+
 func ExampleNewFSM() {
 	fsm := NewFSM(
 		"green",
