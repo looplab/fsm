@@ -58,7 +58,7 @@ func TestInvalidEvent(t *testing.T) {
 		Callbacks{},
 	)
 	err := fsm.Event("lock")
-	if err.Error() != "event lock inappropriate in current state closed" {
+	if err.Error() != "event lock does not exist" {
 		t.FailNow()
 	}
 }

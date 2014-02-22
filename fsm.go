@@ -284,7 +284,18 @@ func (f *FSM) Event(event string) error {
 
 	dst, ok := f.transitions[eKey{event, f.current}]
 	if !ok {
-		return fmt.Errorf("event %s inappropriate in current state %s", event, f.current)
+		found := false
+		for ekey, _ := range f.transitions {
+			if ekey.event == event {
+				found = true
+				break
+			}
+		}
+		if found {
+			return fmt.Errorf("event %s inappropriate in current state %s", event, f.current)
+		} else {
+			return fmt.Errorf("event %s does not exist", event)
+		}
 	}
 
 	if f.current == dst {
