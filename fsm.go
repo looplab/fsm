@@ -48,17 +48,30 @@ type FSM struct {
 }
 
 // Event is the info that get passed as a reference in the callbacks.
-//
-// It contins the FSM calling it, event name, source and destination states.
 type Event struct {
-	FSM      *FSM
-	Event    string
-	Src      string
-	Dst      string
-	Err      error
-	Args     []interface{}
+	// FSM is a reference to the current FSM.
+	FSM *FSM
+
+	// Event is the event name.
+	Event string
+
+	// Src is the state before the transition.
+	Src string
+
+	// Dst is the state after the transition.
+	Dst string
+
+	// Err is an optional error that can be returned from a callback.
+	Err error
+
+	// Args is a optinal list of arguments passed to the callback.
+	Args []interface{}
+
+	// canceled is an internal flag set if the transition is canceled.
 	canceled bool
-	async    bool
+
+	// async is an internal flag set if the transition should be asynchronous
+	async bool
 }
 
 // Cancel can be called in before_<EVENT> or leave_<STATE> to cancel the
@@ -268,11 +281,16 @@ func (f *FSM) Cannot(event string) bool {
 
 // Event initiates a state transition with the named event.
 //
+// The call takes a variable number of arguments that will be passed to the
+// callback, if defined.
+//
 // It will return nil if the state change is ok or one of these errors:
 //
 // - event X inappropriate because previous transition did not complete
 //
 // - event X inappropriate in current state Y
+//
+// - event X does not exist
 //
 // - internal error on state transition
 //
