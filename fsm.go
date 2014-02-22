@@ -56,6 +56,7 @@ type Event struct {
 	Src      string
 	Dst      string
 	Err      error
+	Args     []interface{}
 	canceled bool
 	async    bool
 }
@@ -277,7 +278,7 @@ func (f *FSM) Cannot(event string) bool {
 //
 // The last error should never occur in this situation and is a sign of an
 // internal bug.
-func (f *FSM) Event(event string) error {
+func (f *FSM) Event(event string, args ...interface{}) error {
 	if f.transition != nil {
 		return fmt.Errorf("event %s inappropriate because previous transition did not complete", event)
 	}
@@ -302,7 +303,7 @@ func (f *FSM) Event(event string) error {
 		return nil
 	}
 
-	e := &Event{f, event, f.current, dst, nil, false, false}
+	e := &Event{f, event, f.current, dst, nil, args, false, false}
 
 	// Call the before_ callbacks, first the named then the general version.
 	if fn, ok := f.callbacks[cKey{event, beforeEvent}]; ok {

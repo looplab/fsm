@@ -409,6 +409,30 @@ func TestCallbackError(t *testing.T) {
 	}
 }
 
+func TestCallbackArgs(t *testing.T) {
+	fsm := NewFSM(
+		"start",
+		Events{
+			{Name: "run", Src: []string{"start"}, Dst: "end"},
+		},
+		Callbacks{
+			"run": func(e *Event) {
+				if len(e.Args) != 1 {
+					t.Fatal("too few arguments")
+				}
+				arg, ok := e.Args[0].(string)
+				if !ok {
+					t.Fatal("not a string argument")
+				}
+				if arg != "test" {
+					t.Fatal("incorrect argument")
+				}
+			},
+		},
+	)
+	fsm.Event("run", "test")
+}
+
 func ExampleNewFSM() {
 	fsm := NewFSM(
 		"green",
