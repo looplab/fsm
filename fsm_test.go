@@ -139,16 +139,16 @@ func TestGenericCallbacks(t *testing.T) {
 			{Name: "run", Src: []string{"start"}, Dst: "end"},
 		},
 		Callbacks{
-			"before_run": func(e *Event) {
+			"before_event": func(e *Event) {
 				beforeEvent = true
 			},
-			"leave_start": func(e *Event) {
+			"leave_state": func(e *Event) {
 				leaveState = true
 			},
-			"enter_end": func(e *Event) {
+			"enter_state": func(e *Event) {
 				enterState = true
 			},
-			"after_run": func(e *Event) {
+			"after_event": func(e *Event) {
 				afterEvent = true
 			},
 		},
