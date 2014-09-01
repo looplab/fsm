@@ -1,10 +1,8 @@
-
-# FSM
-
-[![wercker status](https://app.wercker.com/status/517d98fe7a8da9bf9a6060e7906c0d17/m "wercker status")](https://app.wercker.com/project/bykey/517d98fe7a8da9bf9a6060e7906c0d17)
+[![wercker status](https://app.wercker.com/status/517d98fe7a8da9bf9a6060e7906c0d17/s "wercker status")](https://app.wercker.com/project/bykey/517d98fe7a8da9bf9a6060e7906c0d17)
+[![GoDoc](https://godoc.org/github.com/looplab/fsm?status.svg)](https://godoc.org/github.com/looplab/fsm)
 
 
-## Summary
+# FSM for Go
 
 FSM is a finite state machine for Go.
 
@@ -17,7 +15,7 @@ It is heavily based on two FSM implementations:
 For API docs and examples see http://godoc.org/github.com/looplab/fsm
 
 
-## Basic Example
+# Basic Example
 
 From examples/simple.go:
 
@@ -58,7 +56,7 @@ func main() {
 ```
 
 
-## Usage as a struct field
+# Usage as a struct field
 
 From examples/struct.go:
 
@@ -114,7 +112,7 @@ func main() {
 ```
 
 
-## License
+# License
 
 FSM is licensed under Apache License 2.0
 
