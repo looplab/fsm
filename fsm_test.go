@@ -290,6 +290,27 @@ func TestCancelLeaveSpecificState(t *testing.T) {
 	}
 }
 
+func TestCancelWithError(t *testing.T) {
+	fsm := NewFSM(
+		"start",
+		Events{
+			{Name: "run", Src: []string{"start"}, Dst: "end"},
+		},
+		Callbacks{
+			"before_event": func(e *Event) {
+				e.Cancel(fmt.Errorf("error"))
+			},
+		},
+	)
+	e := fsm.Event("run")
+	if e.Error() != "error" {
+		t.FailNow()
+	}
+	if fsm.Current() != "start" {
+		t.FailNow()
+	}
+}
+
 func TestAsyncTransitionGenericState(t *testing.T) {
 	fsm := NewFSM(
 		"start",

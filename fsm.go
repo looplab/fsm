@@ -75,9 +75,14 @@ type Event struct {
 }
 
 // Cancel can be called in before_<EVENT> or leave_<STATE> to cancel the
-// current transition before it happens.
-func (e *Event) Cancel() {
+// current transition before it happens. It takes an opitonal error, which will
+// overwrite e.Err if set before.
+func (e *Event) Cancel(err ...error) {
 	e.canceled = true
+
+	if len(err) > 0 {
+		e.Err = err[0]
+	}
 }
 
 // Async can be called in leave_<STATE> to do an asynchronous state transition.
