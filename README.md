@@ -17,33 +17,100 @@ It is heavily based on two FSM implementations:
 For API docs and examples see http://godoc.org/github.com/looplab/fsm
 
 
-## Example
+## Basic Example
 
-```
-fsm := NewFSM(
-    "closed",
-    Events{
-        {Name: "open", Src: []string{"closed"}, Dst: "open"},
-        {Name: "close", Src: []string{"open"}, Dst: "closed"},
-    },
-    Callbacks{},
+From examples/simple.go:
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/looplab/fsm"
 )
 
-fmt.Println(fsm.Current())
+func main() {
+    fsm := fsm.NewFSM(
+        "closed",
+        fsm.Events{
+            {Name: "open", Src: []string{"closed"}, Dst: "open"},
+            {Name: "close", Src: []string{"open"}, Dst: "closed"},
+        },
+        fsm.Callbacks{},
+    )
 
-err := fsm.Event("open")
-if err != nil {
-    fmt.Println(err)
+    fmt.Println(fsm.Current())
+
+    err := fsm.Event("open")
+    if err != nil {
+        fmt.Println(err)
+    }
+
+    fmt.Println(fsm.Current())
+
+    err = fsm.Event("close")
+    if err != nil {
+        fmt.Println(err)
+    }
+
+    fmt.Println(fsm.Current())
+}
+```
+
+
+## Usage as a struct field
+
+From examples/struct.go:
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/looplab/fsm"
+)
+
+type Door struct {
+    To  string
+    FSM *fsm.FSM
 }
 
-fmt.Println(fsm.Current())
+func NewDoor(to string) *Door {
+    d := &Door{
+        To: to,
+    }
 
-err = fsm.Event("close")
-if err != nil {
-    fmt.Println(err)
+    d.FSM = fsm.NewFSM(
+        "closed",
+        fsm.Events{
+            {Name: "open", Src: []string{"closed"}, Dst: "open"},
+            {Name: "close", Src: []string{"open"}, Dst: "closed"},
+        },
+        fsm.Callbacks{
+            "enter_state": func(e *fsm.Event) { d.enterState(e) },
+        },
+    )
+
+    return d
 }
 
-fmt.Println(fsm.Current())
+func (d *Door) enterState(e *fsm.Event) {
+    fmt.Printf("The door to %s is %s\n", d.To, e.Dst)
+}
+
+func main() {
+    door := NewDoor("heaven")
+
+    err := door.FSM.Event("open")
+    if err != nil {
+        fmt.Println(err)
+    }
+
+    err = door.FSM.Event("close")
+    if err != nil {
+        fmt.Println(err)
+    }
+}
 ```
 
 
