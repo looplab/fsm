@@ -25,7 +25,6 @@
 package fsm
 
 import (
-	"fmt"
 	"strings"
 )
 
@@ -303,97 +302,47 @@ func (f *FSM) Cannot(event string) bool {
 // internal bug.
 func (f *FSM) Event(event string, args ...interface{}) error {
 	if f.transition != nil {
-		return fmt.Errorf("event %s inappropriate because previous transition did not complete", event)
+		return &InTransitionError{event}
 	}
 
 	dst, ok := f.transitions[eKey{event, f.current}]
 	if !ok {
-		found := false
-		for ekey, _ := range f.transitions {
+		for ekey := range f.transitions {
 			if ekey.event == event {
-				found = true
-				break
+				return &InvalidEventError{event, f.current}
 			}
 		}
-		if found {
-			return fmt.Errorf("event %s inappropriate in current state %s", event, f.current)
-		} else {
-			return fmt.Errorf("event %s does not exist", event)
-		}
+		return &UnknownEventError{event}
 	}
 
 	e := &Event{f, event, f.current, dst, nil, args, false, false}
 
+	err := f.beforeEventCallbacks(e)
+	if err != nil {
+		return err
+	}
+
 	if f.current == dst {
-		// Call the after_ callbacks, first the named then the general version.
-		if fn, ok := f.callbacks[cKey{event, afterEvent}]; ok {
-			fn(e)
-		}
-		if fn, ok := f.callbacks[cKey{"", afterEvent}]; ok {
-			fn(e)
-		}
-		return nil
+		f.afterEventCallbacks(e)
+		return &NoTransitionError{e.Err}
 	}
 
-	// Call the before_ callbacks, first the named then the general version.
-	if fn, ok := f.callbacks[cKey{event, beforeEvent}]; ok {
-		fn(e)
-		if e.canceled {
-			return e.Err
-		}
-	}
-	if fn, ok := f.callbacks[cKey{"", beforeEvent}]; ok {
-		fn(e)
-		if e.canceled {
-			return e.Err
-		}
-	}
-
+	// Setup the transition, call it later.
 	f.transition = func() {
-		// Do the state transition.
 		f.current = dst
-
-		// Call the enter_ callbacks, first the named then the general version.
-		if fn, ok := f.callbacks[cKey{f.current, enterState}]; ok {
-			fn(e)
-		}
-		if fn, ok := f.callbacks[cKey{"", enterState}]; ok {
-			fn(e)
-		}
-
-		// Call the after_ callbacks, first the named then the general version.
-		if fn, ok := f.callbacks[cKey{event, afterEvent}]; ok {
-			fn(e)
-		}
-		if fn, ok := f.callbacks[cKey{"", afterEvent}]; ok {
-			fn(e)
-		}
+		f.enterStateCallbacks(e)
+		f.afterEventCallbacks(e)
 	}
 
-	// Call the leave_ callbacks, first the named then the general version.
-	if fn, ok := f.callbacks[cKey{f.current, leaveState}]; ok {
-		fn(e)
-		if e.canceled {
-			f.transition = nil
-			return e.Err
-		} else if e.async {
-			return e.Err
-		}
-	}
-	if fn, ok := f.callbacks[cKey{"", leaveState}]; ok {
-		fn(e)
-		if e.canceled {
-			f.transition = nil
-			return e.Err
-		} else if e.async {
-			return e.Err
-		}
+	err = f.leaveStateCallbacks(e)
+	if err != nil {
+		return err
 	}
 
 	// Perform the rest of the transition, if not asynchronous.
-	err := f.Transition()
+	err = f.Transition()
 	if err != nil {
-		return fmt.Errorf("internal error on state transition")
+		return &InternalError{}
 	}
 
 	return e.Err
@@ -405,9 +354,73 @@ func (f *FSM) Event(event string, args ...interface{}) error {
 // event to have initiated an asynchronous state transition.
 func (f *FSM) Transition() error {
 	if f.transition == nil {
-		return fmt.Errorf("transition inappropriate because no state change in progress")
+		return &NotInTransitionError{}
 	}
 	f.transition()
 	f.transition = nil
 	return nil
+}
+
+// beforeEventCallbacks calls the before_ callbacks, first the named then the
+// general version.
+func (f *FSM) beforeEventCallbacks(e *Event) error {
+	if fn, ok := f.callbacks[cKey{e.Event, beforeEvent}]; ok {
+		fn(e)
+		if e.canceled {
+			return &CanceledError{e.Err}
+		}
+	}
+	if fn, ok := f.callbacks[cKey{"", beforeEvent}]; ok {
+		fn(e)
+		if e.canceled {
+			return &CanceledError{e.Err}
+		}
+	}
+	return nil
+}
+
+// leaveStateCallbacks calls the leave_ callbacks, first the named then the
+// general version.
+func (f *FSM) leaveStateCallbacks(e *Event) error {
+	if fn, ok := f.callbacks[cKey{f.current, leaveState}]; ok {
+		fn(e)
+		if e.canceled {
+			f.transition = nil
+			return &CanceledError{e.Err}
+		} else if e.async {
+			return &AsyncError{e.Err}
+		}
+	}
+	if fn, ok := f.callbacks[cKey{"", leaveState}]; ok {
+		fn(e)
+		if e.canceled {
+			f.transition = nil
+			return &CanceledError{e.Err}
+		} else if e.async {
+			return &AsyncError{e.Err}
+		}
+	}
+	return nil
+}
+
+// enterStateCallbacks calls the enter_ callbacks, first the named then the
+// general version.
+func (f *FSM) enterStateCallbacks(e *Event) {
+	if fn, ok := f.callbacks[cKey{f.current, enterState}]; ok {
+		fn(e)
+	}
+	if fn, ok := f.callbacks[cKey{"", enterState}]; ok {
+		fn(e)
+	}
+}
+
+// afterEventCallbacks calls the after_ callbacks, first the named then the
+// general version.
+func (f *FSM) afterEventCallbacks(e *Event) {
+	if fn, ok := f.callbacks[cKey{e.Event, afterEvent}]; ok {
+		fn(e)
+	}
+	if fn, ok := f.callbacks[cKey{"", afterEvent}]; ok {
+		fn(e)
+	}
 }
