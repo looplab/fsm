@@ -46,56 +46,6 @@ type FSM struct {
 	transition func()
 }
 
-// Event is the info that get passed as a reference in the callbacks.
-type Event struct {
-	// FSM is a reference to the current FSM.
-	FSM *FSM
-
-	// Event is the event name.
-	Event string
-
-	// Src is the state before the transition.
-	Src string
-
-	// Dst is the state after the transition.
-	Dst string
-
-	// Err is an optional error that can be returned from a callback.
-	Err error
-
-	// Args is a optinal list of arguments passed to the callback.
-	Args []interface{}
-
-	// canceled is an internal flag set if the transition is canceled.
-	canceled bool
-
-	// async is an internal flag set if the transition should be asynchronous
-	async bool
-}
-
-// Cancel can be called in before_<EVENT> or leave_<STATE> to cancel the
-// current transition before it happens. It takes an opitonal error, which will
-// overwrite e.Err if set before.
-func (e *Event) Cancel(err ...error) {
-	e.canceled = true
-
-	if len(err) > 0 {
-		e.Err = err[0]
-	}
-}
-
-// Async can be called in leave_<STATE> to do an asynchronous state transition.
-//
-// The current state transition will be on hold in the old state until a final
-// call to Transition is made. This will comlete the transition and possibly
-// call the other callbacks.
-func (e *Event) Async() {
-	e.async = true
-}
-
-// Events is a shorthand for defining the transition map in NewFSM.
-type Events []EventDesc
-
 // EventDesc represents an event when initializing the FSM.
 //
 // The event can have one or more source states that is valid for performing
@@ -114,40 +64,15 @@ type EventDesc struct {
 	Dst string
 }
 
-// Callbacks is a shorthand for defining the callbacks in NewFSM.a
-type Callbacks map[string]Callback
-
 // Callback is a function type that callbacks should use. Event is the current
 // event info as the callback happens.
 type Callback func(*Event)
 
-const (
-	callbackNone int = iota
-	callbackBeforeEvent
-	callbackLeaveState
-	callbackEnterState
-	callbackAfterEvent
-)
+// Events is a shorthand for defining the transition map in NewFSM.
+type Events []EventDesc
 
-// cKey is a struct key used for keeping the callbacks mapped to a target.
-type cKey struct {
-	// target is either the name of a state or an event depending on which
-	// callback type the key refers to. It can also be "" for a non-targeted
-	// callback like before_event.
-	target string
-
-	// callbackType is the situation when the callback will be run.
-	callbackType int
-}
-
-// eKey is a struct key used for storing the transition map.
-type eKey struct {
-	// event is the name of the event that the keys refers to.
-	event string
-
-	// src is the source from where the event can transition.
-	src string
-}
+// Callbacks is a shorthand for defining the callbacks in NewFSM.a
+type Callbacks map[string]Callback
 
 // NewFSM constructs a FSM from events and callbacks.
 //
@@ -185,7 +110,7 @@ type eKey struct {
 // which version of the callback will end up in the internal map. This is due
 // to the psuedo random nature of Go maps. No checking for multiple keys is
 // currently performed.
-func NewFSM(initial string, events Events, callbacks Callbacks) *FSM {
+func NewFSM(initial string, events []EventDesc, callbacks map[string]Callback) *FSM {
 	var f FSM
 	f.current = initial
 	f.transitions = make(map[eKey]string)
@@ -420,4 +345,32 @@ func (f *FSM) afterEventCallbacks(e *Event) {
 	if fn, ok := f.callbacks[cKey{"", callbackAfterEvent}]; ok {
 		fn(e)
 	}
+}
+
+const (
+	callbackNone int = iota
+	callbackBeforeEvent
+	callbackLeaveState
+	callbackEnterState
+	callbackAfterEvent
+)
+
+// cKey is a struct key used for keeping the callbacks mapped to a target.
+type cKey struct {
+	// target is either the name of a state or an event depending on which
+	// callback type the key refers to. It can also be "" for a non-targeted
+	// callback like before_event.
+	target string
+
+	// callbackType is the situation when the callback will be run.
+	callbackType int
+}
+
+// eKey is a struct key used for storing the transition map.
+type eKey struct {
+	// event is the name of the event that the keys refers to.
+	event string
+
+	// src is the source from where the event can transition.
+	src string
 }
