@@ -121,15 +121,12 @@ type Callbacks map[string]Callback
 // event info as the callback happens.
 type Callback func(*Event)
 
-// Type of callback used in the internal mapping to functions.
-type callbackType int
-
 const (
-	noCallback callbackType = iota
-	beforeEvent
-	leaveState
-	enterState
-	afterEvent
+	callbackNone int = iota
+	callbackBeforeEvent
+	callbackLeaveState
+	callbackEnterState
+	callbackAfterEvent
 )
 
 // cKey is a struct key used for keeping the callbacks mapped to a target.
@@ -140,7 +137,7 @@ type cKey struct {
 	target string
 
 	// callbackType is the situation when the callback will be run.
-	callbackType callbackType
+	callbackType int
 }
 
 // eKey is a struct key used for storing the transition map.
@@ -209,52 +206,52 @@ func NewFSM(initial string, events Events, callbacks Callbacks) *FSM {
 	// Map all callbacks to events/states.
 	for name, c := range callbacks {
 		var target string
-		var cType callbackType
+		var callbackType int
 
 		switch {
 		case strings.HasPrefix(name, "before_"):
 			target = strings.TrimPrefix(name, "before_")
 			if target == "event" {
 				target = ""
-				cType = beforeEvent
+				callbackType = callbackBeforeEvent
 			} else if _, ok := allEvents[target]; ok {
-				cType = beforeEvent
+				callbackType = callbackBeforeEvent
 			}
 		case strings.HasPrefix(name, "leave_"):
 			target = strings.TrimPrefix(name, "leave_")
 			if target == "state" {
 				target = ""
-				cType = leaveState
+				callbackType = callbackLeaveState
 			} else if _, ok := allStates[target]; ok {
-				cType = leaveState
+				callbackType = callbackLeaveState
 			}
 		case strings.HasPrefix(name, "enter_"):
 			target = strings.TrimPrefix(name, "enter_")
 			if target == "state" {
 				target = ""
-				cType = enterState
+				callbackType = callbackEnterState
 			} else if _, ok := allStates[target]; ok {
-				cType = enterState
+				callbackType = callbackEnterState
 			}
 		case strings.HasPrefix(name, "after_"):
 			target = strings.TrimPrefix(name, "after_")
 			if target == "event" {
 				target = ""
-				cType = afterEvent
+				callbackType = callbackAfterEvent
 			} else if _, ok := allEvents[target]; ok {
-				cType = afterEvent
+				callbackType = callbackAfterEvent
 			}
 		default:
 			target = name
 			if _, ok := allStates[target]; ok {
-				cType = enterState
+				callbackType = callbackEnterState
 			} else if _, ok := allEvents[target]; ok {
-				cType = afterEvent
+				callbackType = callbackAfterEvent
 			}
 		}
 
-		if cType != noCallback {
-			f.callbacks[cKey{target, cType}] = c
+		if callbackType != callbackNone {
+			f.callbacks[cKey{target, callbackType}] = c
 		}
 	}
 
@@ -364,13 +361,13 @@ func (f *FSM) Transition() error {
 // beforeEventCallbacks calls the before_ callbacks, first the named then the
 // general version.
 func (f *FSM) beforeEventCallbacks(e *Event) error {
-	if fn, ok := f.callbacks[cKey{e.Event, beforeEvent}]; ok {
+	if fn, ok := f.callbacks[cKey{e.Event, callbackBeforeEvent}]; ok {
 		fn(e)
 		if e.canceled {
 			return &CanceledError{e.Err}
 		}
 	}
-	if fn, ok := f.callbacks[cKey{"", beforeEvent}]; ok {
+	if fn, ok := f.callbacks[cKey{"", callbackBeforeEvent}]; ok {
 		fn(e)
 		if e.canceled {
 			return &CanceledError{e.Err}
@@ -382,7 +379,7 @@ func (f *FSM) beforeEventCallbacks(e *Event) error {
 // leaveStateCallbacks calls the leave_ callbacks, first the named then the
 // general version.
 func (f *FSM) leaveStateCallbacks(e *Event) error {
-	if fn, ok := f.callbacks[cKey{f.current, leaveState}]; ok {
+	if fn, ok := f.callbacks[cKey{f.current, callbackLeaveState}]; ok {
 		fn(e)
 		if e.canceled {
 			f.transition = nil
@@ -391,7 +388,7 @@ func (f *FSM) leaveStateCallbacks(e *Event) error {
 			return &AsyncError{e.Err}
 		}
 	}
-	if fn, ok := f.callbacks[cKey{"", leaveState}]; ok {
+	if fn, ok := f.callbacks[cKey{"", callbackLeaveState}]; ok {
 		fn(e)
 		if e.canceled {
 			f.transition = nil
@@ -406,10 +403,10 @@ func (f *FSM) leaveStateCallbacks(e *Event) error {
 // enterStateCallbacks calls the enter_ callbacks, first the named then the
 // general version.
 func (f *FSM) enterStateCallbacks(e *Event) {
-	if fn, ok := f.callbacks[cKey{f.current, enterState}]; ok {
+	if fn, ok := f.callbacks[cKey{f.current, callbackEnterState}]; ok {
 		fn(e)
 	}
-	if fn, ok := f.callbacks[cKey{"", enterState}]; ok {
+	if fn, ok := f.callbacks[cKey{"", callbackEnterState}]; ok {
 		fn(e)
 	}
 }
@@ -417,10 +414,10 @@ func (f *FSM) enterStateCallbacks(e *Event) {
 // afterEventCallbacks calls the after_ callbacks, first the named then the
 // general version.
 func (f *FSM) afterEventCallbacks(e *Event) {
-	if fn, ok := f.callbacks[cKey{e.Event, afterEvent}]; ok {
+	if fn, ok := f.callbacks[cKey{e.Event, callbackAfterEvent}]; ok {
 		fn(e)
 	}
-	if fn, ok := f.callbacks[cKey{"", afterEvent}]; ok {
+	if fn, ok := f.callbacks[cKey{"", callbackAfterEvent}]; ok {
 		fn(e)
 	}
 }
