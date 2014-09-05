@@ -218,6 +218,29 @@ func TestSpecificCallbacksShortform(t *testing.T) {
 	}
 }
 
+func TestBeforeEventWithoutTransition(t *testing.T) {
+	beforeEvent := true
+
+	fsm := NewFSM(
+		"start",
+		Events{
+			{Name: "dontrun", Src: []string{"start"}, Dst: "start"},
+		},
+		Callbacks{
+			"before_event": func(e *Event) {
+				beforeEvent = true
+			},
+		},
+	)
+	fsm.Event("dontrun")
+	if fsm.Current() != "start" {
+		t.FailNow()
+	}
+	if !beforeEvent {
+		t.FailNow()
+	}
+}
+
 func TestCancelBeforeGenericEvent(t *testing.T) {
 	fsm := NewFSM(
 		"start",

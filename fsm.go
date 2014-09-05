@@ -322,11 +322,9 @@ func (f *FSM) Event(event string, args ...interface{}) error {
 		}
 	}
 
+	e := &Event{f, event, f.current, dst, nil, args, false, false}
+
 	if f.current == dst {
-
-		// Call the after events even if destination state is the same as the current state
-		e := &Event{f, event, f.current, dst, nil, args, false, false}
-
 		// Call the after_ callbacks, first the named then the general version.
 		if fn, ok := f.callbacks[cKey{event, afterEvent}]; ok {
 			fn(e)
@@ -334,11 +332,8 @@ func (f *FSM) Event(event string, args ...interface{}) error {
 		if fn, ok := f.callbacks[cKey{"", afterEvent}]; ok {
 			fn(e)
 		}
-
 		return nil
 	}
-
-	e := &Event{f, event, f.current, dst, nil, args, false, false}
 
 	// Call the before_ callbacks, first the named then the general version.
 	if fn, ok := f.callbacks[cKey{event, beforeEvent}]; ok {
