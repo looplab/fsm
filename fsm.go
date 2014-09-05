@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package fms implements a finite state machine.
+// Package fsm implements a finite state machine.
 //
 // It is heavily based on two FSM implementations:
 //
@@ -199,7 +199,7 @@ func (f *FSM) Can(event string) bool {
 	return ok && (f.transition == nil)
 }
 
-// Can returns true if event can not occure in the current state.
+// Cannot returns true if event can not occure in the current state.
 // It is a convenience method to help code read nicely.
 func (f *FSM) Cannot(event string) bool {
 	return !f.Can(event)
