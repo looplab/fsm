@@ -27,4 +27,5 @@ build:
           go get golang.org/x/tools/cmd/cover
           go get github.com/axw/gocov/gocov
           go get github.com/mattn/goveralls
+          git checkout master
           goveralls -service wercker.com -repotoken $COVERALLS_TOKEN
