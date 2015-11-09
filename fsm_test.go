@@ -19,6 +19,13 @@ import (
 	"testing"
 )
 
+type fakeTransitionerObj struct {
+}
+
+func (t fakeTransitionerObj) transition(f *FSM) error {
+	return &InternalError{}
+}
+
 func TestSameState(t *testing.T) {
 	fsm := NewFSM(
 		"start",
@@ -30,6 +37,21 @@ func TestSameState(t *testing.T) {
 	fsm.Event("run")
 	if fsm.Current() != "start" {
 		t.Error("expected state to be 'start'")
+	}
+}
+
+func TestBadTransition(t *testing.T) {
+	fsm := NewFSM(
+		"start",
+		Events{
+			{Name: "run", Src: []string{"start"}, Dst: "running"},
+		},
+		Callbacks{},
+	)
+	fsm.transitionerObj = new(fakeTransitionerObj)
+	err := fsm.Event("run")
+	if err == nil {
+		t.Error("bad transition should give an error")
 	}
 }
 

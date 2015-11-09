@@ -28,6 +28,16 @@ import (
 	"strings"
 )
 
+// transitioner is an interface for the FSM's transition function.
+type transitioner interface {
+	transition(*FSM) error
+}
+
+// transitionerStruct is the default implementation of the transitioner
+// interface. Other implementations can be swapped in for testing.
+type transitionerStruct struct {
+}
+
 // FSM is the state machine that holds the current state.
 //
 // It has to be created with NewFSM to function properly.
@@ -44,6 +54,9 @@ type FSM struct {
 	// transition is the internal transition functions used either directly
 	// or when Transition is called in an asynchronous state transition.
 	transition func()
+
+	// transitionerObj calls the FSM's transition() function.
+	transitionerObj transitioner
 }
 
 // EventDesc represents an event when initializing the FSM.
@@ -112,6 +125,7 @@ type Callbacks map[string]Callback
 // currently performed.
 func NewFSM(initial string, events []EventDesc, callbacks map[string]Callback) *FSM {
 	var f FSM
+	f.transitionerObj = new(transitionerStruct)
 	f.current = initial
 	f.transitions = make(map[eKey]string)
 	f.callbacks = make(map[cKey]Callback)
@@ -270,11 +284,16 @@ func (f *FSM) Event(event string, args ...interface{}) error {
 	return e.Err
 }
 
+// Transition wraps transitioner.transition.
+func (f *FSM) Transition() error {
+	return f.transitionerObj.transition(f)
+}
+
 // Transition completes an asynchrounous state change.
 //
 // The callback for leave_<STATE> must prviously have called Async on its
 // event to have initiated an asynchronous state transition.
-func (f *FSM) Transition() error {
+func (t transitionerStruct) transition(f *FSM) error {
 	if f.transition == nil {
 		return &NotInTransitionError{}
 	}
