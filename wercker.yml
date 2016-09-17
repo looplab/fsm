@@ -1,12 +1,19 @@
-box: wercker/golang
+box: golang
+
+dev:
+  steps:
+    - internal/watch:
+        code: |
+          go build ./...
+        reload: true
 
 build:
   steps:
-    # Sets the go workspace and places you package
-    # at the right place in the workspace tree
-    - setup-go-workspace
+    - wercker/setup-go-workspace:
+      package-dir: github.com/looplab/fsm
 
-    # Gets the dependencies
+    - wercker/golint
+
     - script:
         name: go get
         code: |
@@ -14,18 +21,13 @@ build:
           go version
           go get -t ./...
 
-    # Build the project
     - script:
         name: go build
         code: |
           go build ./...
 
-    # Test the project
     - script:
         name: go test
         code: |
-          go get golang.org/x/tools/cmd/cover
-          go get github.com/axw/gocov/gocov
           go get github.com/mattn/goveralls
-          git checkout master
-          goveralls -service wercker.com -repotoken $COVERALLS_TOKEN
+          goveralls -v -service wercker.com
