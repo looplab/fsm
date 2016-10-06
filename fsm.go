@@ -195,13 +195,12 @@ func NewFSM(initial string, events []EventDesc, callbacks map[string]Callback) *
 		}
 
 		if callbackType != callbackNone {
-			f.callbacks[cKey{target, callbackType}] = func(c Callback) func(e *Event) {
-				return func(e *Event) {
-					f.mutex.Unlock()
-					c(e)
-					f.mutex.Lock()
-				}
-			}(c)
+			cl := c
+			f.callbacks[cKey{target, callbackType}] = func(e *Event) {
+				f.mutex.Unlock()
+				cl(e)
+				f.mutex.Lock()
+			}
 		}
 	}
 
