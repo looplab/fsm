@@ -43,7 +43,7 @@ type transitionerStruct struct {
 //
 // It has to be created with NewFSM to function properly.
 type FSM struct {
-	// mutex is used for syncronization to achieve thread safety
+	// mutex is used for synchronization to achieve thread safety
 	mutex sync.RWMutex
 
 	// current is the state that the FSM is currently in.
