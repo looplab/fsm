@@ -129,7 +129,6 @@ type Callbacks map[string]Callback
 // currently performed.
 func NewFSM(initial string, events []EventDesc, callbacks map[string]Callback) *FSM {
 	var f FSM
-	f.mutex = sync.RWMutex{}
 	f.transitionerObj = new(transitionerStruct)
 	f.current = initial
 	f.transitions = make(map[eKey]string)
@@ -292,7 +291,7 @@ func (f *FSM) Event(event string, args ...interface{}) error {
 	}
 
 	// Perform the rest of the transition, if not asynchronous.
-	err = f.transitionInternal()
+	err = f.doTransition()
 	if err != nil {
 		return &InternalError{}
 	}
@@ -304,11 +303,11 @@ func (f *FSM) Event(event string, args ...interface{}) error {
 func (f *FSM) Transition() error {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
-	return f.transitionInternal()
+	return f.doTransition()
 }
 
-// transitionInternal wraps transitioner.transition.
-func (f *FSM) transitionInternal() error {
+// doTransition wraps transitioner.transition.
+func (f *FSM) doTransition() error {
 	return f.transitionerObj.transition(f)
 }
 
