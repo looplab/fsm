@@ -509,6 +509,22 @@ func TestCallbackArgs(t *testing.T) {
 	fsm.Event("run", "test")
 }
 
+func TestNoDeadLock(t *testing.T) {
+	var fsm *FSM
+	fsm = NewFSM(
+		"start",
+		Events{
+			{Name: "run", Src: []string{"start"}, Dst: "end"},
+		},
+		Callbacks{
+			"run": func(e *Event) {
+				fsm.Current() // Should not result in a panic / deadlock
+			},
+		},
+	)
+	fsm.Event("run")
+}
+
 func ExampleNewFSM() {
 	fsm := NewFSM(
 		"green",
