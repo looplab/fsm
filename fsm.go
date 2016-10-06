@@ -26,6 +26,7 @@ package fsm
 
 import (
 	"strings"
+	"sync"
 )
 
 // transitioner is an interface for the FSM's transition function.
@@ -42,6 +43,9 @@ type transitionerStruct struct {
 //
 // It has to be created with NewFSM to function properly.
 type FSM struct {
+	// mutex is used for syncronization to achieve thread safety
+	mutex sync.RWMutex
+
 	// current is the state that the FSM is currently in.
 	current string
 
@@ -125,6 +129,7 @@ type Callbacks map[string]Callback
 // currently performed.
 func NewFSM(initial string, events []EventDesc, callbacks map[string]Callback) *FSM {
 	var f FSM
+	f.mutex = sync.RWMutex{}
 	f.transitionerObj = new(transitionerStruct)
 	f.current = initial
 	f.transitions = make(map[eKey]string)
@@ -199,16 +204,22 @@ func NewFSM(initial string, events []EventDesc, callbacks map[string]Callback) *
 
 // Current returns the current state of the FSM.
 func (f *FSM) Current() string {
+	f.mutex.RLock()
+	defer f.mutex.RUnlock()
 	return f.current
 }
 
 // Is returns true if state is the current state.
 func (f *FSM) Is(state string) bool {
+	f.mutex.RLock()
+	defer f.mutex.RUnlock()
 	return state == f.current
 }
 
 // Can returns true if event can occur in the current state.
 func (f *FSM) Can(event string) bool {
+	f.mutex.RLock()
+	defer f.mutex.RUnlock()
 	_, ok := f.transitions[eKey{event, f.current}]
 	return ok && (f.transition == nil)
 }
@@ -216,6 +227,8 @@ func (f *FSM) Can(event string) bool {
 // Cannot returns true if event can not occure in the current state.
 // It is a convenience method to help code read nicely.
 func (f *FSM) Cannot(event string) bool {
+	f.mutex.RLock()
+	defer f.mutex.RUnlock()
 	return !f.Can(event)
 }
 
@@ -237,6 +250,9 @@ func (f *FSM) Cannot(event string) bool {
 // The last error should never occur in this situation and is a sign of an
 // internal bug.
 func (f *FSM) Event(event string, args ...interface{}) error {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
 	if f.transition != nil {
 		return &InTransitionError{event}
 	}
@@ -276,7 +292,7 @@ func (f *FSM) Event(event string, args ...interface{}) error {
 	}
 
 	// Perform the rest of the transition, if not asynchronous.
-	err = f.Transition()
+	err = f.transitionInternal()
 	if err != nil {
 		return &InternalError{}
 	}
@@ -286,6 +302,13 @@ func (f *FSM) Event(event string, args ...interface{}) error {
 
 // Transition wraps transitioner.transition.
 func (f *FSM) Transition() error {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+	return f.transitionInternal()
+}
+
+// transitionInternal wraps transitioner.transition.
+func (f *FSM) transitionInternal() error {
 	return f.transitionerObj.transition(f)
 }
 
