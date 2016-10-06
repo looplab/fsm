@@ -129,10 +129,10 @@ type Callbacks map[string]Callback
 // currently performed.
 func NewFSM(initial string, events []EventDesc, callbacks map[string]Callback) *FSM {
 	f := &FSM{
-	    transitionerObj: &transitionerStruct{},
-	    current: initial,
-	    transitions: make(map[eKey]string),
-	    callbacks: make(map[cKey]Callback),
+		transitionerObj: &transitionerStruct{},
+		current:         initial,
+		transitions:     make(map[eKey]string),
+		callbacks:       make(map[cKey]Callback),
 	}
 
 	// Build transition map and store sets of all events and states.
@@ -195,7 +195,7 @@ func NewFSM(initial string, events []EventDesc, callbacks map[string]Callback) *
 		}
 
 		if callbackType != callbackNone {
-			f.callbacks[cKey{target, callbackType}] = func(c Callback) (func(e *Event)) {
+			f.callbacks[cKey{target, callbackType}] = func(c Callback) func(e *Event) {
 				return func(e *Event) {
 					f.mutex.Unlock()
 					c(e)
