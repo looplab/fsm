@@ -226,8 +226,6 @@ func (f *FSM) Can(event string) bool {
 // Cannot returns true if event can not occure in the current state.
 // It is a convenience method to help code read nicely.
 func (f *FSM) Cannot(event string) bool {
-	f.mutex.RLock()
-	defer f.mutex.RUnlock()
 	return !f.Can(event)
 }
 
