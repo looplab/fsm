@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"sync"
 	"testing"
+	"time"
 )
 
 type fakeTransitionerObj struct {
@@ -66,7 +67,7 @@ func TestInappropriateEvent(t *testing.T) {
 		Callbacks{},
 	)
 	err := fsm.Event("close")
-	if e, ok := err.(*InvalidEventError); !ok && e.Event != "close" && e.State != "closed" {
+	if e, ok := err.(InvalidEventError); !ok && e.Event != "close" && e.State != "closed" {
 		t.Error("expected 'InvalidEventError' with correct state and event")
 	}
 }
@@ -81,7 +82,7 @@ func TestInvalidEvent(t *testing.T) {
 		Callbacks{},
 	)
 	err := fsm.Event("lock")
-	if e, ok := err.(*UnknownEventError); !ok && e.Event != "close" {
+	if e, ok := err.(UnknownEventError); !ok && e.Event != "close" {
 		t.Error("expected 'UnknownEventError' with correct event")
 	}
 }
@@ -257,7 +258,7 @@ func TestBeforeEventWithoutTransition(t *testing.T) {
 	)
 
 	err := fsm.Event("dontrun")
-	if e, ok := err.(*NoTransitionError); !ok && e.Err != nil {
+	if e, ok := err.(NoTransitionError); !ok && e.Err != nil {
 		t.Error("expected 'NoTransitionError' without custom error")
 	}
 
@@ -354,11 +355,11 @@ func TestCancelWithError(t *testing.T) {
 		},
 	)
 	err := fsm.Event("run")
-	if _, ok := err.(*CanceledError); !ok {
+	if _, ok := err.(CanceledError); !ok {
 		t.Error("expected only 'CanceledError'")
 	}
 
-	if e, ok := err.(*CanceledError); ok && e.Err.Error() != "error" {
+	if e, ok := err.(CanceledError); ok && e.Err.Error() != "error" {
 		t.Error("expected 'CanceledError' with correct custom error")
 	}
 
@@ -426,7 +427,7 @@ func TestAsyncTransitionInProgress(t *testing.T) {
 	)
 	fsm.Event("run")
 	err := fsm.Event("reset")
-	if e, ok := err.(*InTransitionError); !ok && e.Event != "reset" {
+	if e, ok := err.(InTransitionError); !ok && e.Event != "reset" {
 		t.Error("expected 'InTransitionError' with correct state")
 	}
 	fsm.Transition()
@@ -446,7 +447,7 @@ func TestAsyncTransitionNotInProgress(t *testing.T) {
 		Callbacks{},
 	)
 	err := fsm.Transition()
-	if _, ok := err.(*NotInTransitionError); !ok {
+	if _, ok := err.(NotInTransitionError); !ok {
 		t.Error("expected 'NotInTransitionError'")
 	}
 }
@@ -544,6 +545,45 @@ func TestThreadSafetyRaceCondition(t *testing.T) {
 		_ = fsm.Current()
 	}()
 	fsm.Event("run")
+	wg.Wait()
+}
+
+func TestDoubleTransition(t *testing.T) {
+	var fsm *FSM
+	var wg sync.WaitGroup
+	wg.Add(2)
+	fsm = NewFSM(
+		"start",
+		Events{
+			{Name: "run", Src: []string{"start"}, Dst: "end"},
+		},
+		Callbacks{
+			"before_run": func(e *Event) {
+				wg.Done()
+				// Imagine a concurrent event coming in of the same type while
+				// the data access mutex is unlocked because the current transition
+				// is running its event callbacks, getting around the "active"
+				// transition checks
+				if len(e.Args) == 0 {
+					// Must be concurrent so the test may pass when we add a mutex that synchronizes
+					// calls to Event(...). It will then fail as an inappropriate transition as we
+					// have changed state.
+					go func() {
+						if err := fsm.Event("run", "second run"); err != nil {
+							fmt.Println(err)
+							wg.Done() // It should fail, and then we unfreeze the test.
+						}
+					}()
+					time.Sleep(20 * time.Millisecond)
+				} else {
+					panic("Was able to reissue an event mid-transition")
+				}
+			},
+		},
+	)
+	if err := fsm.Event("run"); err != nil {
+		fmt.Println(err)
+	}
 	wg.Wait()
 }
 
@@ -704,7 +744,7 @@ func ExampleFSM_Transition() {
 		},
 	)
 	err := fsm.Event("open")
-	if e, ok := err.(*AsyncError); !ok && e.Err != nil {
+	if e, ok := err.(AsyncError); !ok && e.Err != nil {
 		fmt.Println(err)
 	}
 	fmt.Println(fsm.Current())

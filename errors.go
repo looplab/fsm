@@ -21,7 +21,7 @@ type InvalidEventError struct {
 	State string
 }
 
-func (e *InvalidEventError) Error() string {
+func (e InvalidEventError) Error() string {
 	return "event " + e.Event + " inappropriate in current state " + e.State
 }
 
@@ -30,7 +30,7 @@ type UnknownEventError struct {
 	Event string
 }
 
-func (e *UnknownEventError) Error() string {
+func (e UnknownEventError) Error() string {
 	return "event " + e.Event + " does not exist"
 }
 
@@ -40,7 +40,7 @@ type InTransitionError struct {
 	Event string
 }
 
-func (e *InTransitionError) Error() string {
+func (e InTransitionError) Error() string {
 	return "event " + e.Event + " inappropriate because previous transition did not complete"
 }
 
@@ -48,7 +48,7 @@ func (e *InTransitionError) Error() string {
 // transition is not in progress.
 type NotInTransitionError struct{}
 
-func (e *NotInTransitionError) Error() string {
+func (e NotInTransitionError) Error() string {
 	return "transition inappropriate because no state change in progress"
 }
 
@@ -58,7 +58,7 @@ type NoTransitionError struct {
 	Err error
 }
 
-func (e *NoTransitionError) Error() string {
+func (e NoTransitionError) Error() string {
 	if e.Err != nil {
 		return "no transition with error: " + e.Err.Error()
 	}
@@ -71,7 +71,7 @@ type CanceledError struct {
 	Err error
 }
 
-func (e *CanceledError) Error() string {
+func (e CanceledError) Error() string {
 	if e.Err != nil {
 		return "transition canceled with error: " + e.Err.Error()
 	}
@@ -84,7 +84,7 @@ type AsyncError struct {
 	Err error
 }
 
-func (e *AsyncError) Error() string {
+func (e AsyncError) Error() string {
 	if e.Err != nil {
 		return "async started with error: " + e.Err.Error()
 	}
@@ -95,6 +95,6 @@ func (e *AsyncError) Error() string {
 // probably because of a bug.
 type InternalError struct{}
 
-func (e *InternalError) Error() string {
+func (e InternalError) Error() string {
 	return "internal error on state transition"
 }
