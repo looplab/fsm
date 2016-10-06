@@ -16,6 +16,7 @@ package fsm
 
 import (
 	"fmt"
+	"sync"
 	"testing"
 )
 
@@ -507,6 +508,27 @@ func TestCallbackArgs(t *testing.T) {
 		},
 	)
 	fsm.Event("run", "test")
+}
+
+func TestThreadSafetyRaceCondition(t *testing.T) {
+	fsm := NewFSM(
+		"start",
+		Events{
+			{Name: "run", Src: []string{"start"}, Dst: "end"},
+		},
+		Callbacks{
+			"run": func(e *Event) {
+			},
+		},
+	)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		_ = fsm.Current()
+	}()
+	fsm.Event("run")
+	wg.Wait()
 }
 
 func ExampleNewFSM() {
