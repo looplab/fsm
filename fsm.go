@@ -128,11 +128,12 @@ type Callbacks map[string]Callback
 // to the psuedo random nature of Go maps. No checking for multiple keys is
 // currently performed.
 func NewFSM(initial string, events []EventDesc, callbacks map[string]Callback) *FSM {
-	var f FSM
-	f.transitionerObj = new(transitionerStruct)
-	f.current = initial
-	f.transitions = make(map[eKey]string)
-	f.callbacks = make(map[cKey]Callback)
+	f := &FSM{
+	    transitionerObj: &transitionerStruct{},
+	    current: initial,
+	    transitions: make(map[eKey]string),
+	    callbacks: make(map[cKey]Callback),
+	}
 
 	// Build transition map and store sets of all events and states.
 	allEvents := make(map[string]bool)
@@ -194,11 +195,17 @@ func NewFSM(initial string, events []EventDesc, callbacks map[string]Callback) *
 		}
 
 		if callbackType != callbackNone {
-			f.callbacks[cKey{target, callbackType}] = c
+			f.callbacks[cKey{target, callbackType}] = func(c Callback) (func(e *Event)) {
+				return func(e *Event) {
+					f.mutex.Unlock()
+					c(e)
+					f.mutex.Lock()
+				}
+			}(c)
 		}
 	}
 
-	return &f
+	return f
 }
 
 // Current returns the current state of the FSM.
@@ -326,17 +333,13 @@ func (t transitionerStruct) transition(f *FSM) error {
 // general version.
 func (f *FSM) beforeEventCallbacks(e *Event) error {
 	if fn, ok := f.callbacks[cKey{e.Event, callbackBeforeEvent}]; ok {
-		f.mutex.Unlock()
 		fn(e)
-		f.mutex.Lock()
 		if e.canceled {
 			return &CanceledError{e.Err}
 		}
 	}
 	if fn, ok := f.callbacks[cKey{"", callbackBeforeEvent}]; ok {
-		f.mutex.Unlock()
 		fn(e)
-		f.mutex.Lock()
 		if e.canceled {
 			return &CanceledError{e.Err}
 		}
@@ -348,9 +351,7 @@ func (f *FSM) beforeEventCallbacks(e *Event) error {
 // general version.
 func (f *FSM) leaveStateCallbacks(e *Event) error {
 	if fn, ok := f.callbacks[cKey{f.current, callbackLeaveState}]; ok {
-		f.mutex.Unlock()
 		fn(e)
-		f.mutex.Lock()
 		if e.canceled {
 			f.transition = nil
 			return &CanceledError{e.Err}
@@ -359,9 +360,7 @@ func (f *FSM) leaveStateCallbacks(e *Event) error {
 		}
 	}
 	if fn, ok := f.callbacks[cKey{"", callbackLeaveState}]; ok {
-		f.mutex.Unlock()
 		fn(e)
-		f.mutex.Lock()
 		if e.canceled {
 			f.transition = nil
 			return &CanceledError{e.Err}
@@ -376,14 +375,10 @@ func (f *FSM) leaveStateCallbacks(e *Event) error {
 // general version.
 func (f *FSM) enterStateCallbacks(e *Event) {
 	if fn, ok := f.callbacks[cKey{f.current, callbackEnterState}]; ok {
-		f.mutex.Unlock()
 		fn(e)
-		f.mutex.Lock()
 	}
 	if fn, ok := f.callbacks[cKey{"", callbackEnterState}]; ok {
-		f.mutex.Unlock()
 		fn(e)
-		f.mutex.Lock()
 	}
 }
 
@@ -391,14 +386,10 @@ func (f *FSM) enterStateCallbacks(e *Event) {
 // general version.
 func (f *FSM) afterEventCallbacks(e *Event) {
 	if fn, ok := f.callbacks[cKey{e.Event, callbackAfterEvent}]; ok {
-		f.mutex.Unlock()
 		fn(e)
-		f.mutex.Lock()
 	}
 	if fn, ok := f.callbacks[cKey{"", callbackAfterEvent}]; ok {
-		f.mutex.Unlock()
 		fn(e)
-		f.mutex.Lock()
 	}
 }
 
