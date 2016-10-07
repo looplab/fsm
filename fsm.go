@@ -26,6 +26,7 @@ package fsm
 
 import (
 	"strings"
+	"sync"
 )
 
 // transitioner is an interface for the FSM's transition function.
@@ -42,6 +43,9 @@ type transitionerStruct struct {
 //
 // It has to be created with NewFSM to function properly.
 type FSM struct {
+	// mutex is used for synchronization to achieve thread safety
+	mutex sync.RWMutex
+
 	// current is the state that the FSM is currently in.
 	current string
 
@@ -124,11 +128,12 @@ type Callbacks map[string]Callback
 // to the psuedo random nature of Go maps. No checking for multiple keys is
 // currently performed.
 func NewFSM(initial string, events []EventDesc, callbacks map[string]Callback) *FSM {
-	var f FSM
-	f.transitionerObj = new(transitionerStruct)
-	f.current = initial
-	f.transitions = make(map[eKey]string)
-	f.callbacks = make(map[cKey]Callback)
+	f := &FSM{
+		transitionerObj: &transitionerStruct{},
+		current:         initial,
+		transitions:     make(map[eKey]string),
+		callbacks:       make(map[cKey]Callback),
+	}
 
 	// Build transition map and store sets of all events and states.
 	allEvents := make(map[string]bool)
@@ -190,25 +195,38 @@ func NewFSM(initial string, events []EventDesc, callbacks map[string]Callback) *
 		}
 
 		if callbackType != callbackNone {
-			f.callbacks[cKey{target, callbackType}] = c
+			cl := c
+			f.callbacks[cKey{target, callbackType}] = func(e *Event) {
+				// This always happens in a locked condition, but needs to be unlocked
+				// to not risk a deadlock. The reversed order is not a mistake!
+				f.mutex.Unlock()
+				defer f.mutex.Lock()
+				cl(e)
+			}
 		}
 	}
 
-	return &f
+	return f
 }
 
 // Current returns the current state of the FSM.
 func (f *FSM) Current() string {
+	f.mutex.RLock()
+	defer f.mutex.RUnlock()
 	return f.current
 }
 
 // Is returns true if state is the current state.
 func (f *FSM) Is(state string) bool {
+	f.mutex.RLock()
+	defer f.mutex.RUnlock()
 	return state == f.current
 }
 
 // Can returns true if event can occur in the current state.
 func (f *FSM) Can(event string) bool {
+	f.mutex.RLock()
+	defer f.mutex.RUnlock()
 	_, ok := f.transitions[eKey{event, f.current}]
 	return ok && (f.transition == nil)
 }
@@ -237,6 +255,9 @@ func (f *FSM) Cannot(event string) bool {
 // The last error should never occur in this situation and is a sign of an
 // internal bug.
 func (f *FSM) Event(event string, args ...interface{}) error {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
 	if f.transition != nil {
 		return &InTransitionError{event}
 	}
@@ -276,7 +297,7 @@ func (f *FSM) Event(event string, args ...interface{}) error {
 	}
 
 	// Perform the rest of the transition, if not asynchronous.
-	err = f.Transition()
+	err = f.doTransition()
 	if err != nil {
 		return &InternalError{}
 	}
@@ -286,6 +307,13 @@ func (f *FSM) Event(event string, args ...interface{}) error {
 
 // Transition wraps transitioner.transition.
 func (f *FSM) Transition() error {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+	return f.doTransition()
+}
+
+// doTransition wraps transitioner.transition.
+func (f *FSM) doTransition() error {
 	return f.transitionerObj.transition(f)
 }
 
