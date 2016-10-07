@@ -197,9 +197,11 @@ func NewFSM(initial string, events []EventDesc, callbacks map[string]Callback) *
 		if callbackType != callbackNone {
 			cl := c
 			f.callbacks[cKey{target, callbackType}] = func(e *Event) {
+				// This always happens in a locked condition, but needs to be unlocked
+				// to not risk a deadlock. The reversed order is not a mistake!
 				f.mutex.Unlock()
+				defer f.mutex.Lock()
 				cl(e)
-				f.mutex.Lock()
 			}
 		}
 	}
