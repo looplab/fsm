@@ -46,6 +46,8 @@ type FSM struct {
 	// mutex is used for synchronization to achieve thread safety
 	mutex sync.RWMutex
 
+	eventMutex sync.Mutex
+
 	// current is the state that the FSM is currently in.
 	current string
 
@@ -255,6 +257,9 @@ func (f *FSM) Cannot(event string) bool {
 // The last error should never occur in this situation and is a sign of an
 // internal bug.
 func (f *FSM) Event(event string, args ...interface{}) error {
+	f.eventMutex.Lock()
+	defer f.eventMutex.Unlock()
+
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
