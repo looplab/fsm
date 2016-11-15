@@ -1,6 +1,7 @@
 [![wercker status](https://app.wercker.com/status/517d98fe7a8da9bf9a6060e7906c0d17/s "wercker status")](https://app.wercker.com/project/bykey/517d98fe7a8da9bf9a6060e7906c0d17)
 [![Coverage Status](https://img.shields.io/coveralls/looplab/fsm.svg)](https://coveralls.io/r/looplab/fsm)
 [![GoDoc](https://godoc.org/github.com/looplab/fsm?status.svg)](https://godoc.org/github.com/looplab/fsm)
+[![Go Report Card](https://goreportcard.com/badge/looplab/fsm)](https://goreportcard.com/report/looplab/fsm)
 
 
 # FSM for Go
