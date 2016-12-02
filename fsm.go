@@ -108,7 +108,7 @@ type Callbacks map[string]Callback
 //
 // 4. leave_state - called before leaving all states
 //
-// 5. enter_<NEW_STATE> - called after eftering <NEW_STATE>
+// 5. enter_<NEW_STATE> - called after entering <NEW_STATE>
 //
 // 6. enter_state - called after entering all states
 //
