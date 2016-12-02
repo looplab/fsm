@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"sync"
 	"testing"
+	"time"
 )
 
 type fakeTransitionerObj struct {
@@ -544,6 +545,45 @@ func TestThreadSafetyRaceCondition(t *testing.T) {
 		_ = fsm.Current()
 	}()
 	fsm.Event("run")
+	wg.Wait()
+}
+
+func TestDoubleTransition(t *testing.T) {
+	var fsm *FSM
+	var wg sync.WaitGroup
+	wg.Add(2)
+	fsm = NewFSM(
+		"start",
+		Events{
+			{Name: "run", Src: []string{"start"}, Dst: "end"},
+		},
+		Callbacks{
+			"before_run": func(e *Event) {
+				wg.Done()
+				// Imagine a concurrent event coming in of the same type while
+				// the data access mutex is unlocked because the current transition
+				// is running its event callbacks, getting around the "active"
+				// transition checks
+				if len(e.Args) == 0 {
+					// Must be concurrent so the test may pass when we add a mutex that synchronizes
+					// calls to Event(...). It will then fail as an inappropriate transition as we
+					// have changed state.
+					go func() {
+						if err := fsm.Event("run", "second run"); err != nil {
+							fmt.Println(err)
+							wg.Done() // It should fail, and then we unfreeze the test.
+						}
+					}()
+					time.Sleep(20*time.Millisecond)
+				}else{
+					panic("Was able to reissue an event mid-transition")
+				}
+			},
+		},
+	)
+	if err := fsm.Event("run"); err != nil {
+		fmt.Println(err)
+	}
 	wg.Wait()
 }
 
