@@ -247,7 +247,7 @@ func TestBeforeEventWithoutTransition(t *testing.T) {
 	fsm := NewFSM(
 		"start",
 		Events{
-			{Name: "dontrun", Src: []string{"start"}, Dst: "start"},
+			{Name: "dorun", Src: []string{"start"}, Dst: "start"},
 		},
 		Callbacks{
 			"before_event": func(e *Event) {
@@ -256,13 +256,13 @@ func TestBeforeEventWithoutTransition(t *testing.T) {
 		},
 	)
 
-	err := fsm.Event("dontrun")
-	if e, ok := err.(*NoTransitionError); !ok && e.Err != nil {
-		t.Error("expected 'NoTransitionError' without custom error")
+	err := fsm.Event("dorun")
+	if err != nil {
+		t.Errorf("Unexpected Error: %s", err)
 	}
 
 	if fsm.Current() != "start" {
-		t.Error("expected state to be 'start'")
+		t.Errorf("expected state to be 'start' but was '%s'", fsm.Current())
 	}
 	if !beforeEvent {
 		t.Error("expected callback to be called")
