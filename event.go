@@ -14,6 +14,10 @@
 
 package fsm
 
+import (
+	"sync"
+)
+
 // Event is the info that get passed as a reference in the callbacks.
 type Event struct {
 	// FSM is a reference to the current FSM.
@@ -39,6 +43,12 @@ type Event struct {
 
 	// async is an internal flag set if the transition should be asynchronous
 	async bool
+
+	// done signals that the event has completed (possibly asynchronously).
+	done chan struct{}
+
+	// once is used to close the done channel just once.
+	once sync.Once
 }
 
 // Cancel can be called in before_<EVENT> or leave_<STATE> to cancel the
@@ -50,6 +60,8 @@ func (e *Event) Cancel(err ...error) {
 	if len(err) > 0 {
 		e.Err = err[0]
 	}
+
+	e.Done()
 }
 
 // Async can be called in leave_<STATE> to do an asynchronous state transition.
@@ -59,4 +71,11 @@ func (e *Event) Cancel(err ...error) {
 // call the other callbacks.
 func (e *Event) Async() {
 	e.async = true
+}
+
+// Done is used to signal that event processing is complete.
+func (e *Event) Done() {
+	e.once.Do(func() {
+		close(e.done)
+	})
 }
