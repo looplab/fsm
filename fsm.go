@@ -44,10 +44,13 @@ type transitionerStruct struct {
 // It has to be created with NewFSM to function properly.
 type FSM struct {
 	// mutex is used for synchronization to achieve thread safety
-	mutex sync.RWMutex
+	mutex sync.Mutex
 
 	// current is the state that the FSM is currently in.
 	current string
+
+	// currentMutex allows thread safe access to the current state
+	currentMutex sync.RWMutex
 
 	// transitions maps events and source states to destination states.
 	transitions map[eKey]string
@@ -204,11 +207,15 @@ func NewFSM(initial string, events []EventDesc, callbacks map[string]Callback) *
 
 // Current returns the current state of the FSM.
 func (f *FSM) Current() string {
+	f.currentMutex.RLock()
+	defer f.currentMutex.RUnlock()
 	return f.current
 }
 
 // Is returns true if state is the current state.
 func (f *FSM) Is(state string) bool {
+	f.currentMutex.RLock()
+	defer f.currentMutex.RUnlock()
 	return state == f.current
 }
 
@@ -279,7 +286,9 @@ func (f *FSM) Event(event string, args ...interface{}) error {
 
 	// Setup the transition, call it later.
 	f.transition = func() {
+		f.currentMutex.Lock()
 		f.current = dst
+		f.currentMutex.Unlock()
 		go func() {
 			f.enterStateCallbacks(e)
 			f.afterEventCallbacks(e)
@@ -350,6 +359,8 @@ func (f *FSM) beforeEventCallbacks(e *Event) error {
 // leaveStateCallbacks calls the leave_ callbacks, first the named then the
 // general version.
 func (f *FSM) leaveStateCallbacks(e *Event) error {
+	f.currentMutex.RLock()
+	defer f.currentMutex.RUnlock()
 	if fn, ok := f.callbacks[cKey{f.current, callbackLeaveState}]; ok {
 		fn(e)
 		if e.canceled {
@@ -374,6 +385,8 @@ func (f *FSM) leaveStateCallbacks(e *Event) error {
 // enterStateCallbacks calls the enter_ callbacks, first the named then the
 // general version.
 func (f *FSM) enterStateCallbacks(e *Event) {
+	f.currentMutex.RLock()
+	defer f.currentMutex.RUnlock()
 	if fn, ok := f.callbacks[cKey{f.current, callbackEnterState}]; ok {
 		fn(e)
 	}
