@@ -30,4 +30,4 @@ build:
         name: go test
         code: |
           go get github.com/mattn/goveralls
-          goveralls -v -service wercker.com
+          goveralls -v -service wercker.com -flags -race
