@@ -587,6 +587,20 @@ func TestDoubleTransition(t *testing.T) {
 	wg.Wait()
 }
 
+func TestNoTransition(t *testing.T) {
+	fsm := NewFSM(
+		"start",
+		Events{
+			{Name: "run", Src: []string{"start"}, Dst: "start"},
+		},
+		Callbacks{},
+	)
+	err := fsm.Event("run")
+	if _, ok := err.(NoTransitionError); !ok {
+		t.Error("expected 'NoTransitionError'")
+	}
+}
+
 func ExampleNewFSM() {
 	fsm := NewFSM(
 		"green",
