@@ -213,6 +213,7 @@ func (f *FSM) Is(state string) bool {
 }
 
 // SetState allows the user to move to the given state from current state.
+// The call does not trigger any callbacks, if defined.
 func (f *FSM) SetState(state string) {
 	f.stateMu.Lock()
 	defer f.stateMu.Unlock()
