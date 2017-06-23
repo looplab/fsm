@@ -213,24 +213,25 @@ func (f *FSM) Is(state string) bool {
 }
 
 // Can returns true if event can occur in the current state.
-func (f *FSM) Can(event string, args ...interface{}) bool {
+func (f *FSM) Can(event string, args ...interface{}) (bool, error) {
 	f.stateMu.RLock()
 	defer f.stateMu.RUnlock()
 	dst, ok := f.transitions[eKey{event, f.current}]
 
 	if !ok || (f.transition != nil) {
-		return false
+		return false, nil
 	}
 
 	e := &Event{f, event, f.current, dst, nil, args, false, false}
 	err := f.beforeEventCallbacks(e)
-	return err == nil
+	return err == nil, err
 }
 
 // Cannot returns true if event can not occure in the current state.
 // It is a convenience method to help code read nicely.
-func (f *FSM) Cannot(event string) bool {
-	return !f.Can(event)
+func (f *FSM) Cannot(event string) (bool, error) {
+	ok, err := f.Can(event)
+	return !ok, err
 }
 
 // Event initiates a state transition with the named event.

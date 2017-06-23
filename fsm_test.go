@@ -615,7 +615,7 @@ func TestCanWithInvalidEvent(t *testing.T) {
 			},
 		},
 	)
-	if fsm.Can("open") {
+	if ok, _ := fsm.Can("open"); ok {
 		t.Error("Should not be able to open")
 	}
 }
@@ -717,8 +717,8 @@ func ExampleFSM_Can() {
 	fmt.Println(fsm.Can("open"))
 	fmt.Println(fsm.Can("close"))
 	// Output:
-	// true
-	// false
+	// true <nil>
+	// false <nil>
 }
 
 func ExampleFSM_Cannot() {
@@ -733,8 +733,8 @@ func ExampleFSM_Cannot() {
 	fmt.Println(fsm.Cannot("open"))
 	fmt.Println(fsm.Cannot("close"))
 	// Output:
-	// false
-	// true
+	// false <nil>
+	// true <nil>
 }
 
 func ExampleFSM_Event() {
