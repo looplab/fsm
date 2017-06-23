@@ -15,6 +15,7 @@
 package fsm
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 	"testing"
@@ -598,6 +599,24 @@ func TestNoTransition(t *testing.T) {
 	err := fsm.Event("run")
 	if _, ok := err.(NoTransitionError); !ok {
 		t.Error("expected 'NoTransitionError'")
+	}
+}
+
+func TestCanWithInvalidEvent(t *testing.T) {
+	fsm := NewFSM(
+		"closed",
+		Events{
+			{Name: "open", Src: []string{"closed"}, Dst: "open"},
+			{Name: "close", Src: []string{"open"}, Dst: "closed"},
+		},
+		Callbacks{
+			"before_open": func(e *Event) {
+				e.Cancel(errors.New("Is locked"))
+			},
+		},
+	)
+	if fsm.Can("open") {
+		t.Error("Should not be able to open")
 	}
 }
 
