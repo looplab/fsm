@@ -59,6 +59,10 @@ type FSM struct {
 	eventMu sync.Mutex
 }
 
+type Stringer interface {
+	String() string
+}
+
 // EventDesc represents an event when initializing the FSM.
 //
 // The event can have one or more source states that is valid for performing
@@ -66,15 +70,15 @@ type FSM struct {
 // the specified destination state, calling all defined callbacks as it goes.
 type EventDesc struct {
 	// Name is the event name used when calling for a transition.
-	Name string
+	Name Stringer
 
 	// Src is a slice of source states that the FSM must be in to perform a
 	// state transition.
-	Src []string
+	Src []Stringer
 
 	// Dst is the destination state that the FSM will be in if the transition
 	// succeds.
-	Dst string
+	Dst Stringer
 }
 
 // Callback is a function type that callbacks should use. Event is the current
@@ -136,11 +140,11 @@ func NewFSM(initial string, events []EventDesc, callbacks map[string]Callback) *
 	allStates := make(map[string]bool)
 	for _, e := range events {
 		for _, src := range e.Src {
-			f.transitions[eKey{e.Name, src}] = e.Dst
-			allStates[src] = true
-			allStates[e.Dst] = true
+			f.transitions[eKey{e.Name.String(), src.String()}] = e.Dst.String()
+			allStates[src.String()] = true
+			allStates[e.Dst.String()] = true
 		}
-		allEvents[e.Name] = true
+		allEvents[e.Name.String()] = true
 	}
 
 	// Map all callbacks to events/states.
