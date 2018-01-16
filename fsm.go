@@ -212,6 +212,15 @@ func (f *FSM) Is(state string) bool {
 	return state == f.current
 }
 
+// SetState allows the user to move to the given state from current state.
+// The call does not trigger any callbacks, if defined.
+func (f *FSM) SetState(state string) {
+	f.stateMu.Lock()
+	defer f.stateMu.Unlock()
+	f.current = state
+	return
+}
+
 // Can returns true if event can occur in the current state.
 func (f *FSM) Can(event string) bool {
 	f.stateMu.RLock()

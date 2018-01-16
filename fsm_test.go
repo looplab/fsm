@@ -42,6 +42,24 @@ func TestSameState(t *testing.T) {
 	}
 }
 
+func TestSetState(t *testing.T) {
+	fsm := NewFSM(
+		"walking",
+		Events{
+			{Name: "walk", Src: []string{"start"}, Dst: "walking"},
+		},
+		Callbacks{},
+	)
+	fsm.SetState("start")
+	if fsm.Current() != "start" {
+		t.Error("expected state to be 'walking'")
+	}
+	err := fsm.Event("walk")
+	if err != nil {
+		t.Error("transition is expected no error")
+	}
+}
+
 func TestBadTransition(t *testing.T) {
 	fsm := NewFSM(
 		"start",
