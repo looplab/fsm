@@ -16,6 +16,7 @@ package fsm
 
 import (
 	"fmt"
+	"sort"
 	"sync"
 	"testing"
 	"time"
@@ -718,6 +719,24 @@ func ExampleFSM_Can() {
 	// Output:
 	// true
 	// false
+}
+
+func ExampleFSM_AvailableTransitions() {
+	fsm := NewFSM(
+		"closed",
+		Events{
+			{Name: "open", Src: []string{"closed"}, Dst: "open"},
+			{Name: "close", Src: []string{"open"}, Dst: "closed"},
+			{Name: "kick", Src: []string{"closed"}, Dst: "broken"},
+		},
+		Callbacks{},
+	)
+	// sort the results ordering is consistent for the output checker
+	transitions := fsm.AvailableTransitions()
+	sort.Strings(transitions)
+	fmt.Println(transitions)
+	// Output:
+	// [kick open]
 }
 
 func ExampleFSM_Cannot() {

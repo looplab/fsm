@@ -229,6 +229,20 @@ func (f *FSM) Can(event string) bool {
 	return ok && (f.transition == nil)
 }
 
+// AvailableTransitions returns a list of transitions avilable in the
+// current state.
+func (f *FSM) AvailableTransitions() []string {
+	f.stateMu.RLock()
+	defer f.stateMu.RUnlock()
+	var transitions []string
+	for key := range f.transitions {
+		if key.src == f.current {
+			transitions = append(transitions, key.event)
+		}
+	}
+	return transitions
+}
+
 // Cannot returns true if event can not occure in the current state.
 // It is a convenience method to help code read nicely.
 func (f *FSM) Cannot(event string) bool {
