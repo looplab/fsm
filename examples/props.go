@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/fari-99/fsm"
 	"strconv"
+	"reflect"
 )
 
 func main() {
@@ -38,7 +39,7 @@ func main() {
 		if len(propertiesArray) > 0 {
 			for propertiesName, propertiesValue := range propertiesArray{
 				fmt.Println("properties name : " + propertiesName)
-				fmt.Println("properties value : " + strconv.FormatBool(propertiesValue))
+				fmt.Println("properties value : " + strconv.FormatBool(reflect.ValueOf(propertiesValue).Bool()))
 			}
 		} else {
 			fmt.Println("Event doesn't have properties")

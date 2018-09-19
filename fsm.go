@@ -94,7 +94,7 @@ type Events []EventDesc
 type Callbacks map[string]Callback
 
 // Properties is a shorthand for defining additional information
-type Properties map[string]bool
+type Properties map[string]interface{}
 
 // NewFSM constructs a FSM from events and callbacks.
 //
