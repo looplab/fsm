@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/looplab/fsm"
+	"github.com/fari-99/fsm"
 	"strconv"
 )
 
