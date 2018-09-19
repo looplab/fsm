@@ -75,6 +75,9 @@ type EventDesc struct {
 	// Dst is the destination state that the FSM will be in if the transition
 	// succeds.
 	Dst string
+
+	// Props is properties that can be done in that state
+	Props map[string]bool
 }
 
 // Callback is a function type that callbacks should use. Event is the current
