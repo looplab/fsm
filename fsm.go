@@ -47,6 +47,9 @@ type FSM struct {
 	// callbacks maps events and targers to callback functions.
 	callbacks map[cKey]Callback
 
+	// properties event, so it can give additional information for that state
+	props map[string]Properties
+
 	// transition is the internal transition functions used either directly
 	// or when Transition is called in an asynchronous state transition.
 	transition func()
@@ -76,8 +79,8 @@ type EventDesc struct {
 	// succeds.
 	Dst string
 
-	// Props is properties that can be done in that state
-	Props map[string]bool
+	// Props is collection of additional information that can be done in that state
+	Props Properties
 }
 
 // Callback is a function type that callbacks should use. Event is the current
@@ -89,6 +92,9 @@ type Events []EventDesc
 
 // Callbacks is a shorthand for defining the callbacks in NewFSM.a
 type Callbacks map[string]Callback
+
+// Properties is a shorthand for defining additional information
+type Properties map[string]bool
 
 // NewFSM constructs a FSM from events and callbacks.
 //
@@ -132,19 +138,25 @@ func NewFSM(initial string, events []EventDesc, callbacks map[string]Callback) *
 		current:         initial,
 		transitions:     make(map[eKey]string),
 		callbacks:       make(map[cKey]Callback),
+		props:			 make(map[string]Properties),
 	}
 
 	// Build transition map and store sets of all events and states.
 	allEvents := make(map[string]bool)
 	allStates := make(map[string]bool)
+	allProperties := make(map[string]Properties)
 	for _, e := range events {
 		for _, src := range e.Src {
 			f.transitions[eKey{e.Name, src}] = e.Dst
 			allStates[src] = true
 			allStates[e.Dst] = true
+			allProperties[e.Name] = e.Props
 		}
 		allEvents[e.Name] = true
 	}
+
+	// assign all properties to props
+	f.props = allProperties
 
 	// Map all callbacks to events/states.
 	for name, fn := range callbacks {
@@ -232,7 +244,7 @@ func (f *FSM) Can(event string) bool {
 	return ok && (f.transition == nil)
 }
 
-// AvailableTransitions returns a list of transitions avilable in the
+// AvailableTransitions returns a list of transitions available in the
 // current state.
 func (f *FSM) AvailableTransitions() []string {
 	f.stateMu.RLock()
@@ -244,6 +256,14 @@ func (f *FSM) AvailableTransitions() []string {
 		}
 	}
 	return transitions
+}
+
+// GetPropertiesTransitions return list of additional information available in the
+// current state
+func (f *FSM) GetPropertiesTransitions() map[string]Properties {
+	f.stateMu.RLock()
+	defer f.stateMu.RUnlock()
+	return f.props
 }
 
 // Cannot returns true if event can not occure in the current state.
