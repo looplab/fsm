@@ -1,9 +1,10 @@
+// +build ignore
+
 package main
 
 import (
 	"fmt"
-	//"github.com/fari-99/fsm"
-	".."
+	"github.com/fari-99/fsm"
 )
 
 func main() {
