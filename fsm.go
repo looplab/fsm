@@ -48,7 +48,7 @@ type FSM struct {
 	callbacks map[cKey]Callback
 
 	// properties event, so it can give additional information for that state
-	props map[string]Properties
+	props Properties
 
 	// transition is the internal transition functions used either directly
 	// or when Transition is called in an asynchronous state transition.
@@ -138,19 +138,22 @@ func NewFSM(initial string, events []EventDesc, callbacks map[string]Callback) *
 		current:         initial,
 		transitions:     make(map[eKey]string),
 		callbacks:       make(map[cKey]Callback),
-		props:			 make(map[string]Properties),
+		props:			 make(Properties),
 	}
 
 	// Build transition map and store sets of all events and states.
 	allEvents := make(map[string]bool)
 	allStates := make(map[string]bool)
-	allProperties := make(map[string]Properties)
+	allProperties := make(Properties)
 	for _, e := range events {
 		for _, src := range e.Src {
 			f.transitions[eKey{e.Name, src}] = e.Dst
 			allStates[src] = true
 			allStates[e.Dst] = true
-			allProperties[e.Name] = e.Props
+
+			if f.current == e.Dst {
+				allProperties[e.Name] = e.Props
+			}
 		}
 		allEvents[e.Name] = true
 	}
@@ -260,7 +263,7 @@ func (f *FSM) AvailableTransitions() []string {
 
 // GetPropertiesTransitions return list of additional information available in the
 // current state
-func (f *FSM) GetPropertiesTransitions() map[string]Properties {
+func (f *FSM) GetPropertiesTransitions() Properties {
 	f.stateMu.RLock()
 	defer f.stateMu.RUnlock()
 	return f.props
