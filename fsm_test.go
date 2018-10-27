@@ -546,6 +546,27 @@ func TestNoDeadLock(t *testing.T) {
 	fsm.Event("run")
 }
 
+func TestEventInEvent(t *testing.T) {
+	var fsm *FSM
+	fsm = NewFSM(
+		"off",
+		Events{
+			{Name: "turn-on", Src: []string{"off"}, Dst: "on"},
+			{Name: "turn-off", Src: []string{"on"}, Dst: "off"},
+		},
+		Callbacks{
+			"leave_off": func(e *Event) {
+				// Test will fail because of timeout if deadlock is happening here
+				err := fsm.Event("turn-off")
+				if err == nil {
+					t.Error("expected to get an error")
+				}
+			},
+		},
+	)
+	fsm.Event("turn-on")
+}
+
 func TestThreadSafetyRaceCondition(t *testing.T) {
 	fsm := NewFSM(
 		"start",

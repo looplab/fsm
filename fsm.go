@@ -267,6 +267,12 @@ func (f *FSM) Cannot(event string) bool {
 // The last error should never occur in this situation and is a sign of an
 // internal bug.
 func (f *FSM) Event(event string, args ...interface{}) error {
+	// Fix for #36: https://github.com/looplab/fsm/issues/36
+	// Check is needed to avoid deadlock when event is fired from callback
+	if f.transition != nil {
+		return InTransitionError{event}
+	}
+
 	f.eventMu.Lock()
 	defer f.eventMu.Unlock()
 
