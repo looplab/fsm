@@ -295,6 +295,7 @@ func (f *FSM) Event(event string, args ...interface{}) error {
 	}
 
 	if f.current == dst {
+		f.enterStateCallbacks(e)
 		f.afterEventCallbacks(e)
 		return NoTransitionError{e.Err}
 	}

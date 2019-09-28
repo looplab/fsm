@@ -201,6 +201,12 @@ func TestGenericCallbacks(t *testing.T) {
 	if !(beforeEvent && leaveState && enterState && afterEvent) {
 		t.Error("expected all callbacks to be called")
 	}
+
+	// invoke same event again
+	fsm.Event("run")
+	if !(beforeEvent && leaveState && enterState && afterEvent) {
+		t.Error("expected all callbacks to be called")
+	}
 }
 
 func TestSpecificCallbacks(t *testing.T) {
