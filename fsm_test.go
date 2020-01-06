@@ -808,3 +808,35 @@ func ExampleFSM_Transition() {
 	// closed
 	// open
 }
+
+func ExampleFSM_OnStateTransition() {
+	onStateCalled := false
+	fsm := NewFSM(
+		"closed",
+		Events{
+			{Name: "open", Src: []string{"closed"}, Dst: "open"},
+			{Name: "close", Src: []string{"open"}, Dst: "closed"},
+		},
+		Callbacks{
+			"closed": func(e *Event) {
+				if e.Event == "open" {
+					onStateCalled = true
+				}
+			},
+		},
+	)
+	fmt.Println(fsm.Current())
+	err := fsm.Event("open")
+
+	if e, ok := err.(AsyncError); !ok && e.Err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println(fsm.Current())
+	// Output:
+	// closed
+	// open
+	if !(onStateCalled) {
+		fmt.Println("expected all callbacks to be called")
+	}
+}

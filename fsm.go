@@ -184,7 +184,7 @@ func NewFSM(initial string, events []EventDesc, callbacks map[string]Callback) *
 		default:
 			target = name
 			if _, ok := allStates[target]; ok {
-				callbackType = callbackEnterState
+				callbackType = callbackOnState
 			} else if _, ok := allEvents[target]; ok {
 				callbackType = callbackAfterEvent
 			}
@@ -301,6 +301,9 @@ func (f *FSM) Event(event string, args ...interface{}) error {
 
 	// Setup the transition, call it later.
 	f.transition = func() {
+
+		f.onStateCallbacks(e)
+
 		f.stateMu.Lock()
 		f.current = dst
 		f.stateMu.Unlock()
@@ -407,6 +410,15 @@ func (f *FSM) enterStateCallbacks(e *Event) {
 	}
 }
 
+func (f *FSM) onStateCallbacks(e *Event) {
+	if fn, ok := f.callbacks[cKey{f.current, callbackOnState}]; ok {
+		fn(e)
+	}
+	if fn, ok := f.callbacks[cKey{"", callbackOnState}]; ok {
+		fn(e)
+	}
+}
+
 // afterEventCallbacks calls the after_ callbacks, first the named then the
 // general version.
 func (f *FSM) afterEventCallbacks(e *Event) {
@@ -423,6 +435,7 @@ const (
 	callbackBeforeEvent
 	callbackLeaveState
 	callbackEnterState
+	callbackOnState
 	callbackAfterEvent
 )
 
