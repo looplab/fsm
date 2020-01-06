@@ -49,7 +49,7 @@ type FSM struct {
 
 	// transition is the internal transition functions used either directly
 	// or when Transition is called in an asynchronous state transition.
-	transition func()
+	transition func() error
 	// transitionerObj calls the FSM's transition() function.
 	transitionerObj transitioner
 
@@ -300,9 +300,11 @@ func (f *FSM) Event(event string, args ...interface{}) error {
 	}
 
 	// Setup the transition, call it later.
-	f.transition = func() {
+	f.transition = func() error {
 
-		f.onStateCallbacks(e)
+		if err = f.onStateCallbacks(e); err != nil {
+			return err
+		}
 
 		f.stateMu.Lock()
 		f.current = dst
@@ -310,6 +312,8 @@ func (f *FSM) Event(event string, args ...interface{}) error {
 
 		f.enterStateCallbacks(e)
 		f.afterEventCallbacks(e)
+
+		return nil
 	}
 
 	if err = f.leaveStateCallbacks(e); err != nil {
@@ -354,9 +358,9 @@ func (t transitionerStruct) transition(f *FSM) error {
 	if f.transition == nil {
 		return NotInTransitionError{}
 	}
-	f.transition()
+	err := f.transition()
 	f.transition = nil
-	return nil
+	return err
 }
 
 // beforeEventCallbacks calls the before_ callbacks, first the named then the
@@ -410,13 +414,18 @@ func (f *FSM) enterStateCallbacks(e *Event) {
 	}
 }
 
-func (f *FSM) onStateCallbacks(e *Event) {
+func (f *FSM) onStateCallbacks(e *Event) error {
 	if fn, ok := f.callbacks[cKey{f.current, callbackOnState}]; ok {
 		fn(e)
 	}
 	if fn, ok := f.callbacks[cKey{"", callbackOnState}]; ok {
 		fn(e)
 	}
+
+	if e.canceled {
+		return CanceledError{e.Err}
+	}
+	return nil
 }
 
 // afterEventCallbacks calls the after_ callbacks, first the named then the
