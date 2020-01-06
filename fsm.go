@@ -306,6 +306,15 @@ func (f *FSM) Event(event string, args ...interface{}) error {
 			return err
 		}
 
+		if e.Err != nil{
+			return nil
+		}
+
+		if e.canceled {
+			e.Err = CanceledError{e.Err}
+			return nil
+		}
+
 		f.stateMu.Lock()
 		f.current = dst
 		f.stateMu.Unlock()
@@ -327,6 +336,7 @@ func (f *FSM) Event(event string, args ...interface{}) error {
 	f.stateMu.RUnlock()
 	err = f.doTransition()
 	f.stateMu.RLock()
+
 	if err != nil {
 		return InternalError{}
 	}
@@ -422,9 +432,6 @@ func (f *FSM) onStateCallbacks(e *Event) error {
 		fn(e)
 	}
 
-	if e.canceled {
-		return CanceledError{e.Err}
-	}
 	return nil
 }
 

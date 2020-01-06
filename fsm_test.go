@@ -840,3 +840,31 @@ func ExampleFSM_OnStateTransition() {
 		fmt.Println("expected all callbacks to be called")
 	}
 }
+
+func ExampleFSM_OnStateTransitionCancelled() {
+	fsm := NewFSM(
+		"closed",
+		Events{
+			{Name: "open", Src: []string{"closed"}, Dst: "open"},
+			{Name: "close", Src: []string{"open"}, Dst: "closed"},
+		},
+		Callbacks{
+			"closed": func(e *Event) {
+				if e.Event == "open" {
+					e.canceled = true
+				}
+			},
+		},
+	)
+	fmt.Println(fsm.Current())
+	err:= fsm.Event("open")
+
+	if err == nil {
+		fmt.Println("Expected the state to be canceled")
+	}
+
+	fmt.Println(fsm.Current())
+	// Output:
+	// closed
+	// closed
+}
