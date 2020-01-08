@@ -16,18 +16,18 @@ func Visualize(fsm *FSM) string {
 
 	// make sure the initial state is at top
 	for k, v := range fsm.transitions {
-		if k.src == fsm.current {
+		if fsm.current.IsNamed(k.src) {
 			states[k.src]++
-			states[v]++
+			states[v.GetName()]++
 			buf.WriteString(fmt.Sprintf(`    "%s" -> "%s" [ label = "%s" ];`, k.src, v, k.event))
 			buf.WriteString("\n")
 		}
 	}
 
 	for k, v := range fsm.transitions {
-		if k.src != fsm.current {
+		if !fsm.current.IsNamed(k.src) {
 			states[k.src]++
-			states[v]++
+			states[v.GetName()]++
 			buf.WriteString(fmt.Sprintf(`    "%s" -> "%s" [ label = "%s" ];`, k.src, v, k.event))
 			buf.WriteString("\n")
 		}

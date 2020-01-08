@@ -38,10 +38,10 @@ type transitioner interface {
 // It has to be created with NewFSM to function properly.
 type FSM struct {
 	// current is the state that the FSM is currently in.
-	current string
+	current State
 
 	// transitions maps events and source states to destination states.
-	transitions map[eKey]string
+	transitions map[eKey]State
 
 	// callbacks maps events and targers to callback functions.
 	callbacks map[cKey]Callback
@@ -65,11 +65,11 @@ type EventDesc struct {
 
 	// Src is a slice of source states that the FSM must be in to perform a
 	// state transition.
-	Src []string
+	Src []State
 
 	// Dst is the destination state that the FSM will be in if the transition
 	// succeds.
-	Dst string
+	Dst State
 }
 
 // Callback is a function type that callbacks should use. Event is the current
@@ -118,11 +118,11 @@ type Callbacks map[string]Callback
 // which version of the callback will end up in the internal map. This is due
 // to the psuedo random nature of Go maps. No checking for multiple keys is
 // currently performed.
-func NewFSM(initial string, events []EventDesc, callbacks map[string]Callback) *FSM {
+func NewFSM(initial State, events []EventDesc, callbacks map[string]Callback) *FSM {
 	f := &FSM{
 		transitionerObj: &transitionerStruct{},
 		current:         initial,
-		transitions:     make(map[eKey]string),
+		transitions:     make(map[eKey]State),
 		callbacks:       make(map[cKey]Callback),
 	}
 
@@ -131,9 +131,9 @@ func NewFSM(initial string, events []EventDesc, callbacks map[string]Callback) *
 	allStates := make(map[string]bool)
 	for _, e := range events {
 		for _, src := range e.Src {
-			f.transitions[eKey{e.Name, src}] = e.Dst
-			allStates[src] = true
-			allStates[e.Dst] = true
+			f.transitions[eKey{e.Name, src.GetName()}] = e.Dst
+			allStates[src.GetName()] = true
+			allStates[e.Dst.GetName()] = true
 		}
 		allEvents[e.Name] = true
 	}
@@ -194,25 +194,25 @@ func NewFSM(initial string, events []EventDesc, callbacks map[string]Callback) *
 }
 
 // Current returns the current state of the FSM.
-func (f *FSM) Current() string {
+func (f *FSM) Current() State {
 	return f.current
 }
 
 // Is returns true if state is the current state.
-func (f *FSM) Is(state string) bool {
-	return state == f.current
+func (f *FSM) Is(state State) bool {
+	return f.current.Equal(state)
 }
 
 // SetState allows the user to move to the given state from current state.
 // The call does not trigger any callbacks, if defined.
-func (f *FSM) SetState(state string) {
+func (f *FSM) SetState(state State) {
 	f.current = state
 	return
 }
 
 // Can returns true if event can occur in the current state.
 func (f *FSM) Can(event string) bool {
-	_, ok := f.transitions[eKey{event, f.current}]
+	_, ok := f.transitions[eKey{event, f.current.GetName()}]
 	return ok && (f.transition == nil)
 }
 
@@ -221,7 +221,7 @@ func (f *FSM) Can(event string) bool {
 func (f *FSM) AvailableTransitions() []string {
 	var transitions []string
 	for key := range f.transitions {
-		if key.src == f.current {
+		if f.current.IsNamed(key.src) {
 			transitions = append(transitions, key.event)
 		}
 	}
@@ -257,11 +257,11 @@ func (f *FSM) Event(event string, args ...interface{}) error {
 		return InTransitionError{event}
 	}
 
-	dst, ok := f.transitions[eKey{event, f.current}]
+	dst, ok := f.transitions[eKey{event, f.current.GetName()}]
 	if !ok {
 		for ekey := range f.transitions {
 			if ekey.event == event {
-				return InvalidEventError{event, f.current}
+				return InvalidEventError{event, f.current.GetName()}
 			}
 		}
 		return UnknownEventError{event}
@@ -274,7 +274,7 @@ func (f *FSM) Event(event string, args ...interface{}) error {
 		return err
 	}
 
-	if f.current == dst {
+	if f.current.Equal(dst) {
 		f.afterEventCallbacks(e)
 		return NoTransitionError{e.Err}
 	}
@@ -351,7 +351,7 @@ func (f *FSM) beforeEventCallbacks(e *Event) error {
 // leaveStateCallbacks calls the leave_ callbacks, first the named then the
 // general version.
 func (f *FSM) leaveStateCallbacks(e *Event) error {
-	if fn, ok := f.callbacks[cKey{f.current, callbackLeaveState}]; ok {
+	if fn, ok := f.callbacks[cKey{f.current.GetName(), callbackLeaveState}]; ok {
 		fn(e)
 		if e.canceled {
 			return CanceledError{e.Err}
@@ -373,7 +373,7 @@ func (f *FSM) leaveStateCallbacks(e *Event) error {
 // enterStateCallbacks calls the enter_ callbacks, first the named then the
 // general version.
 func (f *FSM) enterStateCallbacks(e *Event) {
-	if fn, ok := f.callbacks[cKey{f.current, callbackEnterState}]; ok {
+	if fn, ok := f.callbacks[cKey{f.current.GetName(), callbackEnterState}]; ok {
 		fn(e)
 	}
 	if fn, ok := f.callbacks[cKey{"", callbackEnterState}]; ok {

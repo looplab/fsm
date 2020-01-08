@@ -23,10 +23,10 @@ type Event struct {
 	Event string
 
 	// Src is the state before the transition.
-	Src string
+	Src State
 
 	// Dst is the state after the transition.
-	Dst string
+	Dst State
 
 	// Err is an optional error that can be returned from a callback.
 	Err error
