@@ -26,7 +26,6 @@ package fsm
 
 import (
 	"strings"
-	"sync"
 )
 
 // transitioner is an interface for the FSM's transition function.
@@ -53,10 +52,6 @@ type FSM struct {
 	// transitionerObj calls the FSM's transition() function.
 	transitionerObj transitioner
 
-	// stateMu guards access to the current state.
-	stateMu sync.RWMutex
-	// eventMu guards access to Event() and Transition().
-	eventMu sync.Mutex
 }
 
 // EventDesc represents an event when initializing the FSM.
@@ -200,31 +195,23 @@ func NewFSM(initial string, events []EventDesc, callbacks map[string]Callback) *
 
 // Current returns the current state of the FSM.
 func (f *FSM) Current() string {
-	f.stateMu.RLock()
-	defer f.stateMu.RUnlock()
 	return f.current
 }
 
 // Is returns true if state is the current state.
 func (f *FSM) Is(state string) bool {
-	f.stateMu.RLock()
-	defer f.stateMu.RUnlock()
 	return state == f.current
 }
 
 // SetState allows the user to move to the given state from current state.
 // The call does not trigger any callbacks, if defined.
 func (f *FSM) SetState(state string) {
-	f.stateMu.Lock()
-	defer f.stateMu.Unlock()
 	f.current = state
 	return
 }
 
 // Can returns true if event can occur in the current state.
 func (f *FSM) Can(event string) bool {
-	f.stateMu.RLock()
-	defer f.stateMu.RUnlock()
 	_, ok := f.transitions[eKey{event, f.current}]
 	return ok && (f.transition == nil)
 }
@@ -232,8 +219,6 @@ func (f *FSM) Can(event string) bool {
 // AvailableTransitions returns a list of transitions avilable in the
 // current state.
 func (f *FSM) AvailableTransitions() []string {
-	f.stateMu.RLock()
-	defer f.stateMu.RUnlock()
 	var transitions []string
 	for key := range f.transitions {
 		if key.src == f.current {
@@ -267,11 +252,6 @@ func (f *FSM) Cannot(event string) bool {
 // The last error should never occur in this situation and is a sign of an
 // internal bug.
 func (f *FSM) Event(event string, args ...interface{}) error {
-	f.eventMu.Lock()
-	defer f.eventMu.Unlock()
-
-	f.stateMu.RLock()
-	defer f.stateMu.RUnlock()
 
 	if f.transition != nil {
 		return InTransitionError{event}
@@ -301,9 +281,7 @@ func (f *FSM) Event(event string, args ...interface{}) error {
 
 	// Setup the transition, call it later.
 	f.transition = func() {
-		f.stateMu.Lock()
 		f.current = dst
-		f.stateMu.Unlock()
 
 		f.enterStateCallbacks(e)
 		f.afterEventCallbacks(e)
@@ -317,9 +295,7 @@ func (f *FSM) Event(event string, args ...interface{}) error {
 	}
 
 	// Perform the rest of the transition, if not asynchronous.
-	f.stateMu.RUnlock()
 	err = f.doTransition()
-	f.stateMu.RLock()
 	if err != nil {
 		return InternalError{}
 	}
@@ -329,8 +305,6 @@ func (f *FSM) Event(event string, args ...interface{}) error {
 
 // Transition wraps transitioner.transition.
 func (f *FSM) Transition() error {
-	f.eventMu.Lock()
-	defer f.eventMu.Unlock()
 	return f.doTransition()
 }
 
