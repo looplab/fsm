@@ -28,8 +28,8 @@ digraph fsm {
     "intermediate";
     "open";
 }`
-	normalizedGot := strings.ReplaceAll(got, "\n", "")
-	normalizedWanted := strings.ReplaceAll(wanted, "\n", "")
+	normalizedGot := strings.Replace(got, "\n", "", -1)
+	normalizedWanted := strings.Replace(wanted, "\n", "", -1)
 	if normalizedGot != normalizedWanted {
 		t.Errorf("build graphivz graph failed. \nwanted \n%s\nand got \n%s\n", wanted, got)
 		fmt.Println([]byte(normalizedGot))
@@ -58,8 +58,8 @@ graph fsm
     intermediate -->|part-close| closed
     open -->|close| closed
 `
-	normalizedGot := strings.ReplaceAll(got, "\n", "")
-	normalizedWanted := strings.ReplaceAll(wanted, "\n", "")
+	normalizedGot := strings.Replace(got, "\n", "", -1)
+	normalizedWanted := strings.Replace(wanted, "\n", "", -1)
 	if normalizedGot != normalizedWanted {
 		t.Errorf("build mermaid graph failed. \nwanted \n%s\nand got \n%s\n", wanted, got)
 		fmt.Println([]byte(normalizedGot))
