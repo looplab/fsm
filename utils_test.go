@@ -28,7 +28,7 @@ digraph fsm {
 	normalizedGot := strings.ReplaceAll(got, "\n", "")
 	normalizedWanted := strings.ReplaceAll(wanted, "\n", "")
 	if normalizedGot != normalizedWanted {
-		t.Errorf("build graphivz graph failed. wanted \n%s\nand got \n%s\n", wanted, got)
+		t.Errorf("build graphivz graph failed. \nwanted \n%s\nand got \n%s\n", wanted, got)
 		fmt.Println([]byte(normalizedGot))
 		fmt.Println([]byte(normalizedWanted))
 	}
@@ -50,13 +50,13 @@ func TestMermaidOutput(t *testing.T) {
 	}
 	wanted := `
 graph fsm
-    open -->|close| closed
     closed -->|open| open
+    open -->|close| closed
 `
 	normalizedGot := strings.ReplaceAll(got, "\n", "")
 	normalizedWanted := strings.ReplaceAll(wanted, "\n", "")
 	if normalizedGot != normalizedWanted {
-		t.Errorf("build mermaid graph failed. wanted \n%s\nand got \n%s\n", wanted, got)
+		t.Errorf("build mermaid graph failed. \nwanted \n%s\nand got \n%s\n", wanted, got)
 		fmt.Println([]byte(normalizedGot))
 		fmt.Println([]byte(normalizedWanted))
 	}
