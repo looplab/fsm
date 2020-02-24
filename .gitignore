@@ -26,3 +26,6 @@ _testmain.go
 
 .DS_Store
 .wercker
+
+# Testing
+.coverprofile
