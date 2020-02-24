@@ -12,6 +12,7 @@ func TestGraphvizOutput(t *testing.T) {
 		Events{
 			{Name: "open", Src: []string{"closed"}, Dst: "open"},
 			{Name: "close", Src: []string{"open"}, Dst: "closed"},
+			{Name: "part-close", Src: []string{"intermediate"}, Dst: "closed"},
 		},
 		Callbacks{},
 	)
@@ -20,9 +21,11 @@ func TestGraphvizOutput(t *testing.T) {
 	wanted := `
 digraph fsm {
     "closed" -> "open" [ label = "open" ];
+    "intermediate" -> "closed" [ label = "part-close" ];
     "open" -> "closed" [ label = "close" ];
 
     "closed";
+    "intermediate";
     "open";
 }`
 	normalizedGot := strings.ReplaceAll(got, "\n", "")
@@ -40,6 +43,7 @@ func TestMermaidOutput(t *testing.T) {
 		Events{
 			{Name: "open", Src: []string{"closed"}, Dst: "open"},
 			{Name: "close", Src: []string{"open"}, Dst: "closed"},
+			{Name: "part-close", Src: []string{"intermediate"}, Dst: "closed"},
 		},
 		Callbacks{},
 	)
@@ -51,6 +55,7 @@ func TestMermaidOutput(t *testing.T) {
 	wanted := `
 graph fsm
     closed -->|open| open
+    intermediate -->|part-close| closed
     open -->|close| closed
 `
 	normalizedGot := strings.ReplaceAll(got, "\n", "")
