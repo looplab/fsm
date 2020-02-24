@@ -83,7 +83,8 @@ func Visualize(fsm *FSM) string {
 		}
 	}
 
-	for k, v := range fsm.transitions {
+	for _, k := range sortedEKeys {
+		v := fsm.transitions[k]
 		if k.src != fsm.current {
 			states[k.src]++
 			states[v]++
