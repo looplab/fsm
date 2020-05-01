@@ -53,10 +53,11 @@ func TestMermaidOutput(t *testing.T) {
 		t.Errorf("got error for visualizing with type MERMAID: %s", err)
 	}
 	wanted := `
-graph fsm
-    closed -->|open| open
-    intermediate -->|part-close| closed
-    open -->|close| closed
+stateDiagram
+    [*] --> closed
+    closed --> open: open
+    intermediate --> closed: part-close
+    open --> closed: close
 `
 	normalizedGot := strings.ReplaceAll(got, "\n", "")
 	normalizedWanted := strings.ReplaceAll(wanted, "\n", "")

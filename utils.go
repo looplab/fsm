@@ -42,12 +42,12 @@ func visualizeForMermaid(fsm *FSM) string {
 		return sortedEKeys[i].src < sortedEKeys[j].src
 	})
 
-	buf.WriteString(fmt.Sprintf(`graph fsm`))
-	buf.WriteString("\n")
+	buf.WriteString("stateDiagram\n")
+	buf.WriteString(fmt.Sprintln(`    [*] -->`, fsm.current))
 
 	for _, k := range sortedEKeys {
 		v := fsm.transitions[k]
-		buf.WriteString(fmt.Sprintf(`    %s -->|%s| %s`, k.src, k.event, v))
+		buf.WriteString(fmt.Sprintf(`    %s --> %s: %s`, k.src, v, k.event))
 		buf.WriteString("\n")
 	}
 
