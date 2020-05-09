@@ -530,6 +530,31 @@ func TestCallbackArgs(t *testing.T) {
 	fsm.Event("run", "test")
 }
 
+func TestCallbackPanic(t *testing.T) {
+	panicMsg := "unexpected panic"
+	defer func() {
+		r := recover()
+		if r == nil || r != panicMsg {
+			t.Errorf("expected panic message to be '%s', got %v", panicMsg, r)
+		}
+	}()
+	fsm := NewFSM(
+		"start",
+		Events{
+			{Name: "run", Src: []string{"start"}, Dst: "end"},
+		},
+		Callbacks{
+			"run": func(e *Event) {
+				panic(panicMsg)
+			},
+		},
+	)
+	e := fsm.Event("run")
+	if e.Error() != "error" {
+		t.Error("expected error to be 'error'")
+	}
+}
+
 func TestNoDeadLock(t *testing.T) {
 	var fsm *FSM
 	fsm = NewFSM(

@@ -318,8 +318,8 @@ func (f *FSM) Event(event string, args ...interface{}) error {
 
 	// Perform the rest of the transition, if not asynchronous.
 	f.stateMu.RUnlock()
+	defer f.stateMu.RLock()
 	err = f.doTransition()
-	f.stateMu.RLock()
 	if err != nil {
 		return InternalError{}
 	}
