@@ -67,3 +67,40 @@ stateDiagram
 		fmt.Println([]byte(normalizedWanted))
 	}
 }
+
+
+func TestMermaidFlowChartOutput(t *testing.T) {
+	fsmUnderTest := NewFSM(
+		"closed",
+		Events{
+			{Name: "open", Src: []string{"closed"}, Dst: "open"},
+			{Name: "close", Src: []string{"open"}, Dst: "closed"},
+			{Name: "part-close", Src: []string{"intermediate"}, Dst: "closed"},
+		},
+		Callbacks{},
+	)
+
+	got, err := VisualizeForMermaidWithGraphType(fsmUnderTest, FlowChart)
+	if err != nil {
+		t.Errorf("got error for visualizing with type MERMAID: %s", err)
+	}
+	wanted := `
+graph LR
+    id0[closed]
+    id1[intermediate]
+    id2[open]
+
+    id0 --> |open| id2
+    id1 --> |part-close| id0
+    id2 --> |close| id0
+
+    style id0 fill:#00AA00
+`
+	normalizedGot := strings.ReplaceAll(got, "\n", "")
+	normalizedWanted := strings.ReplaceAll(wanted, "\n", "")
+	if normalizedGot != normalizedWanted {
+		t.Errorf("build mermaid graph failed. \nwanted \n%s\nand got \n%s\n", wanted, got)
+		fmt.Println([]byte(normalizedGot))
+		fmt.Println([]byte(normalizedWanted))
+	}
+}
