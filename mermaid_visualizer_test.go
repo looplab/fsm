@@ -42,6 +42,8 @@ func TestMermaidFlowChartOutput(t *testing.T) {
 		"closed",
 		Events{
 			{Name: "open", Src: []string{"closed"}, Dst: "open"},
+			{Name: "part-open", Src: []string{"closed"}, Dst: "intermediate"},
+			{Name: "part-open", Src: []string{"intermediate"}, Dst: "open"},
 			{Name: "close", Src: []string{"open"}, Dst: "closed"},
 			{Name: "part-close", Src: []string{"intermediate"}, Dst: "closed"},
 		},
@@ -59,7 +61,9 @@ graph LR
     id2[open]
 
     id0 --> |open| id2
+    id0 --> |part-open| id1
     id1 --> |part-close| id0
+    id1 --> |part-open| id2
     id2 --> |close| id0
 
     style id0 fill:#00AA00
