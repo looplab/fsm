@@ -44,6 +44,9 @@ func getSortedTransitionKeys(transitions map[eKey]string) []eKey {
 		sortedTransitionKeys = append(sortedTransitionKeys, transition)
 	}
 	sort.Slice(sortedTransitionKeys, func(i, j int) bool {
+		if sortedTransitionKeys[i].src == sortedTransitionKeys[j].src {
+			return sortedTransitionKeys[i].event < sortedTransitionKeys[j].event
+		}
 		return sortedTransitionKeys[i].src < sortedTransitionKeys[j].src
 	})
 
