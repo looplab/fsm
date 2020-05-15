@@ -84,7 +84,7 @@ type Callback func(*Event)
 // Events is a shorthand for defining the transition map in NewFSM.
 type Events []EventDesc
 
-// Callbacks is a shorthand for defining the callbacks in NewFSM.a
+// Callbacks is a shorthand for defining the callbacks in NewFSM.
 type Callbacks map[string]Callback
 
 // NewFSM constructs a FSM from events and callbacks.
