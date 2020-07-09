@@ -11,11 +11,11 @@ func Visualize(fsm *FSM) string {
 
 	// we sort the key alphabetically to have a reproducible graph output
 	sortedEKeys := getSortedTransitionKeys(fsm.transitions)
-	sortedStateKeys, _ := getSortedStates(fsm.transitions)
+	sortedStatEventKeys, _ := getSortedStates(fsm.transitions)
 
 	writeHeaderLine(&buf)
 	writeTransitions(&buf, fsm.current, sortedEKeys, fsm.transitions)
-	writeStates(&buf, sortedStateKeys)
+	writeStates(&buf, sortedStatEventKeys)
 	writeFooter(&buf)
 
 	return buf.String()
@@ -26,7 +26,7 @@ func writeHeaderLine(buf *bytes.Buffer) {
 	buf.WriteString("\n")
 }
 
-func writeTransitions(buf *bytes.Buffer, current string, sortedEKeys []eKey, transitions map[eKey]string) {
+func writeTransitions(buf *bytes.Buffer, current string, sortedEKeys []EventKey, transitions map[EventKey]string) {
 	// make sure the current state is at top
 	for _, k := range sortedEKeys {
 		if k.src == current {
@@ -46,8 +46,8 @@ func writeTransitions(buf *bytes.Buffer, current string, sortedEKeys []eKey, tra
 	buf.WriteString("\n")
 }
 
-func writeStates(buf *bytes.Buffer, sortedStateKeys []string) {
-	for _, k := range sortedStateKeys {
+func writeStates(buf *bytes.Buffer, sortedStatEventKeys []string) {
+	for _, k := range sortedStatEventKeys {
 		buf.WriteString(fmt.Sprintf(`    "%s";`, k))
 		buf.WriteString("\n")
 	}

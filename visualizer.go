@@ -36,9 +36,9 @@ func VisualizeWithType(fsm *FSM, visualizeType VisualizeType) (string, error) {
 	}
 }
 
-func getSortedTransitionKeys(transitions map[eKey]string) []eKey {
+func getSortedTransitionKeys(transitions map[EventKey]string) []EventKey {
 	// we sort the key alphabetically to have a reproducible graph output
-	sortedTransitionKeys := make([]eKey, 0)
+	sortedTransitionKeys := make([]EventKey, 0)
 
 	for transition := range transitions {
 		sortedTransitionKeys = append(sortedTransitionKeys, transition)
@@ -53,7 +53,7 @@ func getSortedTransitionKeys(transitions map[eKey]string) []eKey {
 	return sortedTransitionKeys
 }
 
-func getSortedStates(transitions map[eKey]string) ([]string, map[string]string) {
+func getSortedStates(transitions map[EventKey]string) ([]string, map[string]string) {
 	statesToIDMap := make(map[string]string)
 	for transition, target := range transitions {
 		if _, ok := statesToIDMap[transition.src]; !ok {

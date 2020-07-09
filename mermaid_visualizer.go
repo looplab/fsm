@@ -74,7 +74,7 @@ func writeFlowChartStates(buf *bytes.Buffer, sortedStates []string, statesToIDMa
 	buf.WriteString("\n")
 }
 
-func writeFlowChartTransitions(buf *bytes.Buffer, transitions map[eKey]string, sortedTransitionKeys []eKey, statesToIDMap map[string]string) {
+func writeFlowChartTransitions(buf *bytes.Buffer, transitions map[EventKey]string, sortedTransitionKeys []EventKey, statesToIDMap map[string]string) {
 	for _, transition := range sortedTransitionKeys {
 		target := transitions[transition]
 		buf.WriteString(fmt.Sprintf(`    %s --> |%s| %s`, statesToIDMap[transition.src], transition.event, statesToIDMap[target]))
