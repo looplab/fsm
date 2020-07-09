@@ -16,7 +16,6 @@ package fsm
 
 import (
 	"fmt"
-	"log"
 	"sort"
 	"sync"
 	"testing"
@@ -28,28 +27,6 @@ type fakeTransitionerObj struct {
 
 func (t fakeTransitionerObj) transition(f *FSM) error {
 	return &InternalError{}
-}
-
-func TestGetByte(t *testing.T) {
-	fsm := NewFSM(
-		"start",
-		Events{
-			{Name: "run", Src: []string{"start"}, Dst: "start"},
-		},
-		Callbacks{},
-	)
-
-	byt, err := fsm.Bytes()
-	if err != nil {
-		t.Errorf("%v", err)
-	}
-
-	f, err := fsm.ConvertToFSM(byt)
-	if err != nil {
-		t.Errorf("%v", err)
-	}
-
-	log.Printf("%v", f)
 }
 
 func TestSameState(t *testing.T) {

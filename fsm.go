@@ -25,7 +25,6 @@
 package fsm
 
 import (
-	"fmt"
 	"strings"
 	"sync"
 )
@@ -47,6 +46,8 @@ type FSM struct {
 
 	// callbacks maps events and targers to callback functions.
 	callbacks map[CallbackKey]Callback
+
+	message map[EventKey]string
 
 	// transition is the internal transition functions used either directly
 	// or when Transition is called in an asynchronous state transition.
@@ -78,6 +79,8 @@ type EventDesc struct {
 	// Dst is the destination state that the FSM will be in if the transition
 	// succeds.
 	Dst string
+
+	Msg string
 }
 
 // Callback is a function type that callbacks should use. Event is the current
@@ -132,7 +135,7 @@ func NewFSM(initial string, events []EventDesc, callbacks map[string]Callback) *
 		current:         initial,
 		transitions:     make(map[EventKey]string),
 		callbacks:       make(map[CallbackKey]Callback),
-		TransitionsMap:  make(map[string]string),
+		message:         make(map[EventKey]string),
 	}
 
 	// Build transition map and store sets of all events and states.
@@ -141,7 +144,7 @@ func NewFSM(initial string, events []EventDesc, callbacks map[string]Callback) *
 	for _, e := range events {
 		for _, src := range e.Src {
 			f.transitions[EventKey{e.Name, src}] = e.Dst
-			f.TransitionsMap[constructKey(e.Name, src)] = e.Dst
+			f.message[EventKey{e.Name, src}] = e.Msg
 			allStates[src] = true
 			allStates[e.Dst] = true
 		}
@@ -206,116 +209,120 @@ func NewFSM(initial string, events []EventDesc, callbacks map[string]Callback) *
 // This part of custom method by ruangguru devs
 // ============================================
 
-func constructKey(fieldOne string, fieldTwo string) string {
-	return fmt.Sprintf("%s:%s", fieldOne, fieldTwo)
-}
+// func constructKey(fieldOne string, fieldTwo string) string {
+// 	return fmt.Sprintf("%s:%s", fieldOne, fieldTwo)
+// }
 
-func spliterKey(key string) []string {
-	return strings.Split(key, ":")
-}
+// func spliterKey(key string) []string {
+// 	return strings.Split(key, ":")
+// }
 
-// SetState allows the user to move to the given state from current state.
-// The call does not trigger any callbacks, if defined.
-func (f *FSM) RoguSetState(state string) {
-	f.stateMu.Lock()
-	defer f.stateMu.Unlock()
-	f.current = state
-	return
-}
+// // SetState allows the user to move to the given state from current state.
+// // The call does not trigger any callbacks, if defined.
+// func (f *FSM) RoguSetState(state string) {
+// 	f.stateMu.Lock()
+// 	defer f.stateMu.Unlock()
+// 	f.current = state
+// 	return
+// }
 
-// Can returns true if event can occur in the current state.
-func (f *FSM) RoguCan(event string) bool {
-	f.stateMu.RLock()
-	defer f.stateMu.RUnlock()
-	_, ok := f.TransitionsMap[constructKey(event, f.current)]
-	return ok && (f.transition == nil)
-}
+// // Can returns true if event can occur in the current state.
+// func (f *FSM) RoguCan(event string) bool {
+// 	f.stateMu.RLock()
+// 	defer f.stateMu.RUnlock()
+// 	_, ok := f.TransitionsMap[constructKey(event, f.current)]
+// 	return ok && (f.transition == nil)
+// }
 
-// Current returns the current state of the FSM.
-func (f *FSM) RoguCurrent() string {
-	f.stateMu.RLock()
-	defer f.stateMu.RUnlock()
-	return f.current
-}
+// // Current returns the current state of the FSM.
+// func (f *FSM) RoguCurrent() string {
+// 	f.stateMu.RLock()
+// 	defer f.stateMu.RUnlock()
+// 	return f.current
+// }
 
-// Event initiates a state transition with the named event.
-//
-// The call takes a variable number of arguments that will be passed to the
-// callback, if defined.
-//
-// It will return nil if the state change is ok or one of these errors:
-//
-// - event X inappropriate because previous transition did not complete
-//
-// - event X inappropriate in current state Y
-//
-// - event X does not exist
-//
-// - internal error on state transition
-//
-// The last error should never occur in this situation and is a sign of an
-// internal bug.
-func (f *FSM) RoguEvent(event string, args ...interface{}) error {
-	f.eventMu.Lock()
-	defer f.eventMu.Unlock()
+// // Event initiates a state transition with the named event.
+// //
+// // The call takes a variable number of arguments that will be passed to the
+// // callback, if defined.
+// //
+// // It will return nil if the state change is ok or one of these errors:
+// //
+// // - event X inappropriate because previous transition did not complete
+// //
+// // - event X inappropriate in current state Y
+// //
+// // - event X does not exist
+// //
+// // - internal error on state transition
+// //
+// // The last error should never occur in this situation and is a sign of an
+// // internal bug.
+// func (f *FSM) RoguEvent(event string, args ...interface{}) error {
+// 	f.eventMu.Lock()
+// 	defer f.eventMu.Unlock()
 
-	f.stateMu.RLock()
-	defer f.stateMu.RUnlock()
+// 	f.stateMu.RLock()
+// 	defer f.stateMu.RUnlock()
 
-	if f.transition != nil {
-		return InTransitionError{event}
-	}
+// 	if f.transition != nil {
+// 		return InTransitionError{event}
+// 	}
 
-	dst, ok := f.TransitionsMap[constructKey(event, f.current)]
-	if !ok {
-		for key := range f.TransitionsMap {
-			k := spliterKey(key)
-			ekey := &EventKey{k[0], k[1]}
-			if ekey.event == event {
-				return InvalidEventError{event, f.current}
-			}
-		}
-		return UnknownEventError{event}
-	}
+// 	dst, ok := f.TransitionsMap[constructKey(event, f.current)]
+// 	if !ok {
+// 		for key := range f.TransitionsMap {
+// 			k := spliterKey(key)
+// 			ekey := &EventKey{k[0], k[1]}
+// 			if ekey.event == event {
+// 				return InvalidEventError{event, f.current}
+// 			}
+// 		}
+// 		return UnknownEventError{event}
+// 	}
 
-	e := &Event{f, event, f.current, dst, nil, args, false, false}
+// 	e := &Event{f, event, f.current, dst, nil, args, false, false}
 
-	err := f.beforeEventCallbacks(e)
-	if err != nil {
-		return err
-	}
+// 	err := f.beforeEventCallbacks(e)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	if f.current == dst {
-		f.afterEventCallbacks(e)
-		return NoTransitionError{e.Err}
-	}
+// 	if f.current == dst {
+// 		f.afterEventCallbacks(e)
+// 		return NoTransitionError{e.Err}
+// 	}
 
-	// Setup the transition, call it later.
-	f.transition = func() {
-		f.stateMu.Lock()
-		f.current = dst
-		f.stateMu.Unlock()
+// 	// Setup the transition, call it later.
+// 	f.transition = func() {
+// 		f.stateMu.Lock()
+// 		f.current = dst
+// 		f.stateMu.Unlock()
 
-		f.enterStateCallbacks(e)
-		f.afterEventCallbacks(e)
-	}
+// 		f.enterStateCallbacks(e)
+// 		f.afterEventCallbacks(e)
+// 	}
 
-	if err = f.leaveStateCallbacks(e); err != nil {
-		if _, ok := err.(CanceledError); ok {
-			f.transition = nil
-		}
-		return err
-	}
+// 	if err = f.leaveStateCallbacks(e); err != nil {
+// 		if _, ok := err.(CanceledError); ok {
+// 			f.transition = nil
+// 		}
+// 		return err
+// 	}
 
-	// Perform the rest of the transition, if not asynchronous.
-	f.stateMu.RUnlock()
-	defer f.stateMu.RLock()
-	err = f.doTransition()
-	if err != nil {
-		return InternalError{}
-	}
+// 	// Perform the rest of the transition, if not asynchronous.
+// 	f.stateMu.RUnlock()
+// 	defer f.stateMu.RLock()
+// 	err = f.doTransition()
+// 	if err != nil {
+// 		return InternalError{}
+// 	}
 
-	return e.Err
+// 	return e.Err
+// }
+
+func (f *FSM) GetMessage(event string, src string) string {
+	return f.message[EventKey{event, src}]
 }
 
 // ============================================
