@@ -320,6 +320,12 @@ func NewFSM(initial string, events []EventDesc, callbacks map[string]Callback) *
 
 // 	return e.Err
 // }
+func (f *FSM) CanMove(event string, src string) bool {
+	f.stateMu.RLock()
+	defer f.stateMu.RUnlock()
+	_, ok := f.transitions[EventKey{event, src}]
+	return ok && (f.transition == nil)
+}
 
 func (f *FSM) GetDestinationState(lastState string, command string) (string, bool) {
 	dst, ok := f.transitions[EventKey{command, lastState}]
