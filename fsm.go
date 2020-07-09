@@ -321,6 +321,11 @@ func NewFSM(initial string, events []EventDesc, callbacks map[string]Callback) *
 // 	return e.Err
 // }
 
+func (f *FSM) GetDestinationState(lastState string, command string) (string, bool) {
+	dst, ok := f.transitions[EventKey{command, lastState}]
+	return dst, ok
+}
+
 func (f *FSM) GetMessage(event string, src string) string {
 	return f.message[EventKey{event, src}]
 }
