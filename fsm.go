@@ -129,7 +129,7 @@ type Callbacks map[string]Callback
 // which version of the callback will end up in the internal map. This is due
 // to the psuedo random nature of Go maps. No checking for multiple keys is
 // currently performed.
-func NewFSM(initial string, events []EventDesc, callbacks map[string]Callback) *FSM {
+func NewFSM(initial string, events []*EventDesc, callbacks map[string]Callback) *FSM {
 	f := &FSM{
 		transitionerObj: &transitionerStruct{},
 		current:         initial,
@@ -206,120 +206,6 @@ func NewFSM(initial string, events []EventDesc, callbacks map[string]Callback) *
 	return f
 }
 
-// This part of custom method by ruangguru devs
-// ============================================
-
-// func constructKey(fieldOne string, fieldTwo string) string {
-// 	return fmt.Sprintf("%s:%s", fieldOne, fieldTwo)
-// }
-
-// func spliterKey(key string) []string {
-// 	return strings.Split(key, ":")
-// }
-
-// // SetState allows the user to move to the given state from current state.
-// // The call does not trigger any callbacks, if defined.
-// func (f *FSM) RoguSetState(state string) {
-// 	f.stateMu.Lock()
-// 	defer f.stateMu.Unlock()
-// 	f.current = state
-// 	return
-// }
-
-// // Can returns true if event can occur in the current state.
-// func (f *FSM) RoguCan(event string) bool {
-// 	f.stateMu.RLock()
-// 	defer f.stateMu.RUnlock()
-// 	_, ok := f.TransitionsMap[constructKey(event, f.current)]
-// 	return ok && (f.transition == nil)
-// }
-
-// // Current returns the current state of the FSM.
-// func (f *FSM) RoguCurrent() string {
-// 	f.stateMu.RLock()
-// 	defer f.stateMu.RUnlock()
-// 	return f.current
-// }
-
-// // Event initiates a state transition with the named event.
-// //
-// // The call takes a variable number of arguments that will be passed to the
-// // callback, if defined.
-// //
-// // It will return nil if the state change is ok or one of these errors:
-// //
-// // - event X inappropriate because previous transition did not complete
-// //
-// // - event X inappropriate in current state Y
-// //
-// // - event X does not exist
-// //
-// // - internal error on state transition
-// //
-// // The last error should never occur in this situation and is a sign of an
-// // internal bug.
-// func (f *FSM) RoguEvent(event string, args ...interface{}) error {
-// 	f.eventMu.Lock()
-// 	defer f.eventMu.Unlock()
-
-// 	f.stateMu.RLock()
-// 	defer f.stateMu.RUnlock()
-
-// 	if f.transition != nil {
-// 		return InTransitionError{event}
-// 	}
-
-// 	dst, ok := f.TransitionsMap[constructKey(event, f.current)]
-// 	if !ok {
-// 		for key := range f.TransitionsMap {
-// 			k := spliterKey(key)
-// 			ekey := &EventKey{k[0], k[1]}
-// 			if ekey.event == event {
-// 				return InvalidEventError{event, f.current}
-// 			}
-// 		}
-// 		return UnknownEventError{event}
-// 	}
-
-// 	e := &Event{f, event, f.current, dst, nil, args, false, false}
-
-// 	err := f.beforeEventCallbacks(e)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	if f.current == dst {
-// 		f.afterEventCallbacks(e)
-// 		return NoTransitionError{e.Err}
-// 	}
-
-// 	// Setup the transition, call it later.
-// 	f.transition = func() {
-// 		f.stateMu.Lock()
-// 		f.current = dst
-// 		f.stateMu.Unlock()
-
-// 		f.enterStateCallbacks(e)
-// 		f.afterEventCallbacks(e)
-// 	}
-
-// 	if err = f.leaveStateCallbacks(e); err != nil {
-// 		if _, ok := err.(CanceledError); ok {
-// 			f.transition = nil
-// 		}
-// 		return err
-// 	}
-
-// 	// Perform the rest of the transition, if not asynchronous.
-// 	f.stateMu.RUnlock()
-// 	defer f.stateMu.RLock()
-// 	err = f.doTransition()
-// 	if err != nil {
-// 		return InternalError{}
-// 	}
-
-// 	return e.Err
-// }
 func (f *FSM) CanMove(event string, src string) bool {
 	f.stateMu.RLock()
 	defer f.stateMu.RUnlock()
@@ -335,8 +221,6 @@ func (f *FSM) GetDestinationState(lastState string, command string) (string, boo
 func (f *FSM) GetMessage(event string, src string) string {
 	return f.message[EventKey{event, src}]
 }
-
-// ============================================
 
 // Current returns the current state of the FSM.
 func (f *FSM) Current() string {
