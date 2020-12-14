@@ -98,3 +98,11 @@ type InternalError struct{}
 func (e InternalError) Error() string {
 	return "internal error on state transition"
 }
+
+// NoDataError is returned by FSM.ReadData() when the data being queried isn't
+// present
+type NoDataError struct{}
+
+func (e NoDataError) Error() string {
+	return "Specified Data not available"
+}
