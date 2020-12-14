@@ -44,7 +44,7 @@ type FSM struct {
 	// transitions maps events and source states to destination states.
 	transitions map[eKey]string
 
-	// callbacks maps events and targers to callback functions.
+	// callbacks maps events and targets to callback functions.
 	callbacks map[cKey]Callback
 
 	// transition is the internal transition functions used either directly
@@ -57,6 +57,8 @@ type FSM struct {
 	stateMu sync.RWMutex
 	// eventMu guards access to Event() and Transition().
 	eventMu sync.Mutex
+	// data can be used to store and load data that maybe used across events
+	data map[string]*DataValue
 }
 
 // EventDesc represents an event when initializing the FSM.
@@ -86,6 +88,15 @@ type Events []EventDesc
 
 // Callbacks is a shorthand for defining the callbacks in NewFSM.
 type Callbacks map[string]Callback
+
+// DataValue is stored in data which can be indexed using key. It has Value to
+// store underlying data and ValueMu used for safely storing and retrieving
+type DataValue struct {
+	// valueMu guards access to the value underlying
+	ValueMu sync.RWMutex
+	// value has the actual data which may be used store data at the machine level
+	Value interface{}
+}
 
 // NewFSM constructs a FSM from events and callbacks.
 //
@@ -129,6 +140,7 @@ func NewFSM(initial string, events []EventDesc, callbacks map[string]Callback) *
 		current:         initial,
 		transitions:     make(map[eKey]string),
 		callbacks:       make(map[cKey]Callback),
+		data:            make(map[string]*DataValue),
 	}
 
 	// Build transition map and store sets of all events and states.
@@ -229,7 +241,7 @@ func (f *FSM) Can(event string) bool {
 	return ok && (f.transition == nil)
 }
 
-// AvailableTransitions returns a list of transitions avilable in the
+// AvailableTransitions returns a list of transitions available in the
 // current state.
 func (f *FSM) AvailableTransitions() []string {
 	f.stateMu.RLock()
@@ -247,6 +259,25 @@ func (f *FSM) AvailableTransitions() []string {
 // It is a convenience method to help code read nicely.
 func (f *FSM) Cannot(event string) bool {
 	return !f.Can(event)
+}
+
+// ReadData returns the value stored in data
+func (f *FSM) ReadData(key string) interface{} {
+	dataElement, ok := f.data[key]
+	if !ok {
+		return NoDataError{}
+	}
+	dataElement.ValueMu.RLock()
+	defer dataElement.ValueMu.RUnlock()
+	return dataElement.Value
+}
+
+// WriteData stores the dataValue in data indexing it with key
+func (f *FSM) WriteData(key string, dataValue interface{}) {
+	dataElement := f.data[key]
+	dataElement.ValueMu.Lock()
+	dataElement.Value = dataValue
+	dataElement.ValueMu.Unlock()
 }
 
 // Event initiates a state transition with the named event.
