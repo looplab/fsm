@@ -59,6 +59,8 @@ type FSM struct {
 	eventMu sync.Mutex
 	// data can be used to store and load data that maybe used across events
 	data map[string]*DataValue
+
+	mapLock sync.Mutex
 }
 
 // EventDesc represents an event when initializing the FSM.
@@ -274,10 +276,17 @@ func (f *FSM) ReadData(key string) interface{} {
 
 // WriteData stores the dataValue in data indexing it with key
 func (f *FSM) WriteData(key string, dataValue interface{}) {
-	dataElement := f.data[key]
-	dataElement.ValueMu.Lock()
-	dataElement.Value = dataValue
-	dataElement.ValueMu.Unlock()
+	dataElement, ok := f.data[key]
+	if ok {
+		dataElement.ValueMu.Lock()
+		dataElement.Value = dataValue
+		dataElement.ValueMu.Unlock()
+	} else {
+		f.mapLock.Lock()
+		f.data[key] = &DataValue{Value: dataValue}
+		f.mapLock.Unlock()
+	}
+
 }
 
 // Event initiates a state transition with the named event.
