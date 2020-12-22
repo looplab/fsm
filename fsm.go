@@ -57,10 +57,10 @@ type FSM struct {
 	stateMu sync.RWMutex
 	// eventMu guards access to Event() and Transition().
 	eventMu sync.Mutex
-	// data can be used to store and load data that maybe used across events
-	metadata map[string]*DataValue
+	// metadata can be used to store and load data that maybe used across events
+	metadata map[string]interface{}
 
-	metadataMu sync.Mutex
+	metadataMu sync.RWMutex
 }
 
 // EventDesc represents an event when initializing the FSM.
@@ -90,15 +90,6 @@ type Events []EventDesc
 
 // Callbacks is a shorthand for defining the callbacks in NewFSM.
 type Callbacks map[string]Callback
-
-// DataValue is stored in data which can be indexed using key. It has Value to
-// store underlying data and ValueMu used for safely storing and retrieving
-type DataValue struct {
-	// valueMu guards access to the value underlying
-	ValueMu sync.RWMutex
-	// value has the actual data which may be used store data at the machine level
-	Value interface{}
-}
 
 // NewFSM constructs a FSM from events and callbacks.
 //
@@ -142,7 +133,7 @@ func NewFSM(initial string, events []EventDesc, callbacks map[string]Callback) *
 		current:         initial,
 		transitions:     make(map[eKey]string),
 		callbacks:       make(map[cKey]Callback),
-		metadata:        make(map[string]*DataValue),
+		metadata:        make(map[string]interface{}),
 	}
 
 	// Build transition map and store sets of all events and states.
@@ -265,28 +256,20 @@ func (f *FSM) Cannot(event string) bool {
 
 // Metadata returns the value stored in data
 func (f *FSM) Metadata(key string) interface{} {
+	f.metadataMu.RLock()
+	defer f.metadataMu.RUnlock()
 	dataElement, ok := f.metadata[key]
 	if !ok {
 		return NoDataError{}
 	}
-	dataElement.ValueMu.RLock()
-	defer dataElement.ValueMu.RUnlock()
-	return dataElement.Value
+	return dataElement
 }
 
 // SetMetadata stores the dataValue in data indexing it with key
 func (f *FSM) SetMetadata(key string, dataValue interface{}) {
-	dataElement, ok := f.metadata[key]
-	if ok {
-		dataElement.ValueMu.Lock()
-		dataElement.Value = dataValue
-		dataElement.ValueMu.Unlock()
-	} else {
-		f.metadataMu.Lock()
-		f.metadata[key] = &DataValue{Value: dataValue}
-		f.metadataMu.Unlock()
-	}
-
+	f.metadataMu.Lock()
+	defer f.metadataMu.Unlock()
+	f.metadata[key] = dataValue
 }
 
 // Event initiates a state transition with the named event.
