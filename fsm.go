@@ -58,9 +58,9 @@ type FSM struct {
 	// eventMu guards access to Event() and Transition().
 	eventMu sync.Mutex
 	// data can be used to store and load data that maybe used across events
-	data map[string]*DataValue
+	metadata map[string]*DataValue
 
-	mapLock sync.Mutex
+	metadataMu sync.Mutex
 }
 
 // EventDesc represents an event when initializing the FSM.
@@ -142,7 +142,7 @@ func NewFSM(initial string, events []EventDesc, callbacks map[string]Callback) *
 		current:         initial,
 		transitions:     make(map[eKey]string),
 		callbacks:       make(map[cKey]Callback),
-		data:            make(map[string]*DataValue),
+		metadata:        make(map[string]*DataValue),
 	}
 
 	// Build transition map and store sets of all events and states.
@@ -263,9 +263,9 @@ func (f *FSM) Cannot(event string) bool {
 	return !f.Can(event)
 }
 
-// ReadData returns the value stored in data
-func (f *FSM) ReadData(key string) interface{} {
-	dataElement, ok := f.data[key]
+// Metadata returns the value stored in data
+func (f *FSM) Metadata(key string) interface{} {
+	dataElement, ok := f.metadata[key]
 	if !ok {
 		return NoDataError{}
 	}
@@ -274,17 +274,17 @@ func (f *FSM) ReadData(key string) interface{} {
 	return dataElement.Value
 }
 
-// WriteData stores the dataValue in data indexing it with key
-func (f *FSM) WriteData(key string, dataValue interface{}) {
-	dataElement, ok := f.data[key]
+// SetMetadata stores the dataValue in data indexing it with key
+func (f *FSM) SetMetadata(key string, dataValue interface{}) {
+	dataElement, ok := f.metadata[key]
 	if ok {
 		dataElement.ValueMu.Lock()
 		dataElement.Value = dataValue
 		dataElement.ValueMu.Unlock()
 	} else {
-		f.mapLock.Lock()
-		f.data[key] = &DataValue{Value: dataValue}
-		f.mapLock.Unlock()
+		f.metadataMu.Lock()
+		f.metadata[key] = &DataValue{Value: dataValue}
+		f.metadataMu.Unlock()
 	}
 
 }

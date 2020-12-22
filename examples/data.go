@@ -17,11 +17,11 @@ func main() {
 		},
 		fsm.Callbacks{
 			"produce": func(e *fsm.Event) {
-				e.FSM.WriteData("message", "hii")
+				e.FSM.SetMetadata("message", "hii")
 				fmt.Println("produced data")
 			},
 			"consume": func(e *fsm.Event) {
-				message := e.FSM.ReadData("message").(string)
+				message := e.FSM.Metadata("message").(string)
 				fmt.Println("message = " + message)
 			},
 		},
