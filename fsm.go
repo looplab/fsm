@@ -58,6 +58,7 @@ type FSM struct {
 	// eventMu guards access to Event() and Transition().
 	eventMu sync.Mutex
 	// metadata can be used to store and load data that maybe used across events
+	// use methods SetMetadata() and Metadata() to store and load data
 	metadata map[string]interface{}
 
 	metadataMu sync.RWMutex
@@ -254,18 +255,15 @@ func (f *FSM) Cannot(event string) bool {
 	return !f.Can(event)
 }
 
-// Metadata returns the value stored in data
-func (f *FSM) Metadata(key string) interface{} {
+// Metadata returns the value stored in metadata
+func (f *FSM) Metadata(key string) (interface{}, bool) {
 	f.metadataMu.RLock()
 	defer f.metadataMu.RUnlock()
 	dataElement, ok := f.metadata[key]
-	if !ok {
-		return NoDataError{}
-	}
-	return dataElement
+	return dataElement, ok
 }
 
-// SetMetadata stores the dataValue in data indexing it with key
+// SetMetadata stores the dataValue in metadata indexing it with key
 func (f *FSM) SetMetadata(key string, dataValue interface{}) {
 	f.metadataMu.Lock()
 	defer f.metadataMu.Unlock()

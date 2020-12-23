@@ -21,8 +21,11 @@ func main() {
 				fmt.Println("produced data")
 			},
 			"consume": func(e *fsm.Event) {
-				message := e.FSM.Metadata("message").(string)
-				fmt.Println("message = " + message)
+				message, ok := e.FSM.Metadata("message")
+				if ok {
+					fmt.Println("message = " + message.(string))
+				}
+
 			},
 		},
 	)
