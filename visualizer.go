@@ -13,9 +13,9 @@ const (
 	GRAPHVIZ VisualizeType = "graphviz"
 	// MERMAID the type for mermaid output (https://mermaid-js.github.io/mermaid/#/stateDiagram) in the stateDiagram form
 	MERMAID VisualizeType = "mermaid"
-	// MERMAID the type for mermaid output (https://mermaid-js.github.io/mermaid/#/stateDiagram) in the stateDiagram form
+	// MermaidStateDiagram the type for mermaid output (https://mermaid-js.github.io/mermaid/#/stateDiagram) in the stateDiagram form
 	MermaidStateDiagram VisualizeType = "mermaid-state-diagram"
-	// MERMAID the type for mermaid output (https://mermaid-js.github.io/mermaid/#/flowchart) in the flow chart form
+	// MermaidFlowChart the type for mermaid output (https://mermaid-js.github.io/mermaid/#/flowchart) in the flow chart form
 	MermaidFlowChart VisualizeType = "mermaid-flow-chart"
 )
 
