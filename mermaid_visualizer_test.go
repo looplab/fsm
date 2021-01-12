@@ -22,7 +22,7 @@ func TestMermaidOutput(t *testing.T) {
 		t.Errorf("got error for visualizing with type MERMAID: %s", err)
 	}
 	wanted := `
-stateDiagram
+stateDiagram-v2
     [*] --> closed
     closed --> open: open
     intermediate --> closed: part-close

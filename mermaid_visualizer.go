@@ -34,7 +34,7 @@ func visualizeForMermaidAsStateDiagram(fsm *FSM) string {
 
 	sortedTransitionKeys := getSortedTransitionKeys(fsm.transitions)
 
-	buf.WriteString("stateDiagram\n")
+	buf.WriteString("stateDiagram-v2\n")
 	buf.WriteString(fmt.Sprintln(`    [*] -->`, fsm.current))
 
 	for _, k := range sortedTransitionKeys {
