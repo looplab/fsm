@@ -1,6 +1,6 @@
-[![Build Status](https://travis-ci.com/looplab/fsm.svg?branch=master)](https://travis-ci.com/looplab/fsm)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/looplab/fsm)](https://pkg.go.dev/github.com/looplab/fsm)
+![Bulid Status](https://github.com/looplab/fsm/actions/workflows/main.yml/badge.svg)
 [![Coverage Status](https://img.shields.io/coveralls/looplab/fsm.svg)](https://coveralls.io/r/looplab/fsm)
-[![GoDoc](https://godoc.org/github.com/looplab/fsm?status.svg)](https://godoc.org/github.com/looplab/fsm)
 [![Go Report Card](https://goreportcard.com/badge/looplab/fsm)](https://goreportcard.com/report/looplab/fsm)
 
 # FSM for Go
