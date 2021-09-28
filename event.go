@@ -16,7 +16,7 @@ package fsm
 
 // Event is the info that get passed as a reference in the callbacks.
 type Event struct {
-	// FSM is a reference to the current FSM.
+	// FSM is an reference to the current FSM.
 	FSM *FSM
 
 	// Event is the event name.
@@ -31,7 +31,7 @@ type Event struct {
 	// Err is an optional error that can be returned from a callback.
 	Err error
 
-	// Args is a optinal list of arguments passed to the callback.
+	// Args is an optional list of arguments passed to the callback.
 	Args []interface{}
 
 	// canceled is an internal flag set if the transition is canceled.
@@ -42,7 +42,7 @@ type Event struct {
 }
 
 // Cancel can be called in before_<EVENT> or leave_<STATE> to cancel the
-// current transition before it happens. It takes an opitonal error, which will
+// current transition before it happens. It takes an optional error, which will
 // overwrite e.Err if set before.
 func (e *Event) Cancel(err ...error) {
 	e.canceled = true
@@ -55,7 +55,7 @@ func (e *Event) Cancel(err ...error) {
 // Async can be called in leave_<STATE> to do an asynchronous state transition.
 //
 // The current state transition will be on hold in the old state until a final
-// call to Transition is made. This will comlete the transition and possibly
+// call to Transition is made. This will complete the transition and possibly
 // call the other callbacks.
 func (e *Event) Async() {
 	e.async = true

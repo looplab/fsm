@@ -56,7 +56,7 @@ func visualizeForMermaidAsFlowChart(fsm *FSM) string {
 	writeFlowChartGraphType(&buf)
 	writeFlowChartStates(&buf, sortedStates, statesToIDMap)
 	writeFlowChartTransitions(&buf, fsm.transitions, sortedTransitionKeys, statesToIDMap)
-	writeFlowChartHightlightCurrent(&buf, fsm.current, statesToIDMap)
+	writeFlowChartHighlightCurrent(&buf, fsm.current, statesToIDMap)
 
 	return buf.String()
 }
@@ -83,7 +83,7 @@ func writeFlowChartTransitions(buf *bytes.Buffer, transitions map[eKey]string, s
 	buf.WriteString("\n")
 }
 
-func writeFlowChartHightlightCurrent(buf *bytes.Buffer, current string, statesToIDMap map[string]string) {
+func writeFlowChartHighlightCurrent(buf *bytes.Buffer, current string, statesToIDMap map[string]string) {
 	buf.WriteString(fmt.Sprintf(`    style %s fill:%s`, statesToIDMap[current], highlightingColor))
 	buf.WriteString("\n")
 }
