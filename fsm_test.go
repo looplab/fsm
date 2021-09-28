@@ -471,6 +471,74 @@ func TestAsyncTransitionNotInProgress(t *testing.T) {
 	}
 }
 
+func TestCancelAsyncTransitionGenericState(t *testing.T) {
+	fsm := NewFSM(
+		"start",
+		Events{
+			{Name: "run", Src: []string{"start"}, Dst: "end"},
+		},
+		Callbacks{
+			"leave_state": func(e *Event) {
+				e.Async()
+			},
+		},
+	)
+	fsm.Event("run")
+	if fsm.Current() != "start" {
+		t.Error("expected state to be 'start'")
+	}
+	err := fsm.Event("run")
+	if e, ok := err.(InTransitionError); !ok && e.Event != "run" {
+		t.Error("expected 'InTransitionError' with correct state")
+	}
+	fsm.CancelTransition()
+	err = fsm.Event("run")
+	if _, ok := err.(AsyncError); !ok {
+		t.Error("expected 'AsyncError'")
+	}
+}
+
+func TestCancelAsyncTransitionSpecificState(t *testing.T) {
+	fsm := NewFSM(
+		"start",
+		Events{
+			{Name: "run", Src: []string{"start"}, Dst: "end"},
+		},
+		Callbacks{
+			"leave_start": func(e *Event) {
+				e.Async()
+			},
+		},
+	)
+	fsm.Event("run")
+	if fsm.Current() != "start" {
+		t.Error("expected state to be 'start'")
+	}
+	err := fsm.Event("run")
+	if e, ok := err.(InTransitionError); !ok && e.Event != "run" {
+		t.Error("expected 'InTransitionError' with correct state")
+	}
+	fsm.CancelTransition()
+	err = fsm.Event("run")
+	if _, ok := err.(AsyncError); !ok {
+		t.Error("expected 'AsyncError'")
+	}
+}
+
+func TestCancelAsyncTransitionNotInProgress(t *testing.T) {
+	fsm := NewFSM(
+		"start",
+		Events{
+			{Name: "run", Src: []string{"start"}, Dst: "end"},
+		},
+		Callbacks{},
+	)
+	err := fsm.CancelTransition()
+	if _, ok := err.(NotInTransitionError); !ok {
+		t.Error("expected 'NotInTransitionError'")
+	}
+}
+
 func TestCallbackNoError(t *testing.T) {
 	fsm := NewFSM(
 		"start",

@@ -355,6 +355,16 @@ func (f *FSM) Transition() error {
 	return f.doTransition()
 }
 
+func (f *FSM) CancelTransition() error {
+	f.eventMu.Lock()
+	defer f.eventMu.Unlock()
+	if f.transition == nil {
+		return NotInTransitionError{}
+	}
+	f.transition = nil
+	return nil
+}
+
 // doTransition wraps transitioner.transition.
 func (f *FSM) doTransition() error {
 	return f.transitionerObj.transition(f)
