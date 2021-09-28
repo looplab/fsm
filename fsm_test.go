@@ -53,7 +53,7 @@ func TestSetState(t *testing.T) {
 	)
 	fsm.SetState("start")
 	if fsm.Current() != "start" {
-		t.Error("expected state to be 'walking'")
+		t.Error("expected state to be 'start'")
 	}
 	err := fsm.Event("walk")
 	if err != nil {
