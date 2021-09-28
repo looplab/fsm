@@ -29,6 +29,10 @@ func (t fakeTransitionerObj) transition(f *FSM) error {
 	return &InternalError{}
 }
 
+func (t fakeTransitionerObj) cancelTransition(f *FSM) error {
+	return nil
+}
+
 func TestSameState(t *testing.T) {
 	fsm := NewFSM(
 		"start",

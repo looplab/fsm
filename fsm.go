@@ -32,6 +32,7 @@ import (
 // transitioner is an interface for the FSM's transition function.
 type transitioner interface {
 	transition(*FSM) error
+	cancelTransition(*FSM) error
 }
 
 // FSM is the state machine that holds the current state.
@@ -355,19 +356,21 @@ func (f *FSM) Transition() error {
 	return f.doTransition()
 }
 
+// CancelTransition wraps transitioner.cancelTransition.
 func (f *FSM) CancelTransition() error {
 	f.eventMu.Lock()
 	defer f.eventMu.Unlock()
-	if f.transition == nil {
-		return NotInTransitionError{}
-	}
-	f.transition = nil
-	return nil
+	return f.cancelTransition()
 }
 
 // doTransition wraps transitioner.transition.
 func (f *FSM) doTransition() error {
 	return f.transitionerObj.transition(f)
+}
+
+// cancelTransition wraps transitioner.cancelTransition.
+func (f *FSM) cancelTransition() error {
+	return f.transitionerObj.cancelTransition(f)
 }
 
 // transitionerStruct is the default implementation of the transitioner
@@ -383,6 +386,18 @@ func (t transitionerStruct) transition(f *FSM) error {
 		return NotInTransitionError{}
 	}
 	f.transition()
+	f.transition = nil
+	return nil
+}
+
+// CancelTransition cancels an asynchrounous state change.
+//
+// The callback for leave_<STATE> must prviously have called Async on its
+// event to have initiated an asynchronous state transition.
+func (t transitionerStruct) cancelTransition(f *FSM) error {
+	if f.transition == nil {
+		return NotInTransitionError{}
+	}
 	f.transition = nil
 	return nil
 }
