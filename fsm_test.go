@@ -529,6 +529,72 @@ func TestCancelAsyncTransitionSpecificState(t *testing.T) {
 	}
 }
 
+func TestContextWhenCancelAsyncTransition(t *testing.T) {
+	fsm := NewFSM(
+		"start",
+		Events{
+			{Name: "run", Src: []string{"start"}, Dst: "end"},
+		},
+		Callbacks{
+			"leave_start": func(e *Event) {
+				e.Async()
+			},
+		},
+	)
+	err := fsm.Event("run")
+	asyncErr, ok := err.(AsyncError)
+	if !ok || asyncErr.Ctx == nil {
+		t.Error("expected context in 'AsyncError'")
+	}
+	defer asyncErr.Ctx.Done()
+	
+	fsm.CancelTransition()
+	timer := time.NewTimer(time.Millisecond * 100)
+	defer timer.Stop()
+	
+	select {
+	case <-timer.C:
+		t.Error("expected context has been done")
+	case _, ok := <-asyncErr.Ctx.Done():
+		if ok {
+			t.Error("expected context has been done")
+		}
+	}
+}
+
+func TestContextWhenFinishAsyncTransition(t *testing.T) {
+	fsm := NewFSM(
+		"start",
+		Events{
+			{Name: "run", Src: []string{"start"}, Dst: "end"},
+		},
+		Callbacks{
+			"leave_start": func(e *Event) {
+				e.Async()
+			},
+		},
+	)
+	err := fsm.Event("run")
+	asyncErr, ok := err.(AsyncError)
+	if !ok || asyncErr.Ctx == nil {
+		t.Error("expected context in 'AsyncError'")
+	}
+	defer asyncErr.Ctx.Done()
+	
+	fsm.Transition()
+	timer := time.NewTimer(time.Millisecond * 100)
+	defer timer.Stop()
+	
+	select {
+	case <-timer.C:
+		t.Error("expected context has been done")
+	case _, ok := <-asyncErr.Ctx.Done():
+		if ok {
+			t.Error("expected context has been done")
+		}
+	}
+}
+
 func TestCancelAsyncTransitionNotInProgress(t *testing.T) {
 	fsm := NewFSM(
 		"start",

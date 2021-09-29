@@ -14,6 +14,8 @@
 
 package fsm
 
+import "context"
+
 // InvalidEventError is returned by FSM.Event() when the event cannot be called
 // in the current state.
 type InvalidEventError struct {
@@ -80,8 +82,11 @@ func (e CanceledError) Error() string {
 
 // AsyncError is returned by FSM.Event() when a callback have initiated an
 // asynchronous state transition.
+// 
+// Ctx indicates if the transition is done.
 type AsyncError struct {
 	Err error
+	Ctx context.Context
 }
 
 func (e AsyncError) Error() string {

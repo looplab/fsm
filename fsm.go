@@ -25,6 +25,7 @@
 package fsm
 
 import (
+	"context"
 	"strings"
 	"sync"
 )
@@ -63,6 +64,9 @@ type FSM struct {
 	metadata map[string]interface{}
 
 	metadataMu sync.RWMutex
+
+	// cancelCtx cancels the context associated to asynchronous state transition.
+	cancelCtx context.CancelFunc
 }
 
 // EventDesc represents an event when initializing the FSM.
@@ -136,6 +140,7 @@ func NewFSM(initial string, events []EventDesc, callbacks map[string]Callback) *
 		transitions:     make(map[eKey]string),
 		callbacks:       make(map[cKey]Callback),
 		metadata:        make(map[string]interface{}),
+		cancelCtx:       nil,
 	}
 
 	// Build transition map and store sets of all events and states.
@@ -387,6 +392,10 @@ func (t transitionerStruct) transition(f *FSM) error {
 	}
 	f.transition()
 	f.transition = nil
+	if f.cancelCtx != nil {
+		f.cancelCtx()
+		f.cancelCtx = nil
+	}
 	return nil
 }
 
@@ -398,6 +407,8 @@ func (t transitionerStruct) cancelTransition(f *FSM) error {
 	if f.transition == nil {
 		return NotInTransitionError{}
 	}
+	f.cancelCtx()
+	f.cancelCtx = nil
 	f.transition = nil
 	return nil
 }
@@ -428,7 +439,9 @@ func (f *FSM) leaveStateCallbacks(e *Event) error {
 		if e.canceled {
 			return CanceledError{e.Err}
 		} else if e.async {
-			return AsyncError{e.Err}
+			ctx, cancel := context.WithCancel(context.Background())
+			f.cancelCtx = cancel
+			return AsyncError{e.Err, ctx}
 		}
 	}
 	if fn, ok := f.callbacks[cKey{"", callbackLeaveState}]; ok {
@@ -436,7 +449,9 @@ func (f *FSM) leaveStateCallbacks(e *Event) error {
 		if e.canceled {
 			return CanceledError{e.Err}
 		} else if e.async {
-			return AsyncError{e.Err}
+			ctx, cancel := context.WithCancel(context.Background())
+			f.cancelCtx = cancel
+			return AsyncError{e.Err, ctx}
 		}
 	}
 	return nil
