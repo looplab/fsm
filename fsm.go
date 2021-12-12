@@ -366,8 +366,12 @@ func (f *FSM) Event(ctx context.Context, event string, args ...interface{}) erro
 			f.transition = nil
 		} else if asyncError, ok := err.(AsyncError); ok {
 			// setup a new context in order for async state transitions to work correctly
-			ctx, cancel := context.WithCancel(context.Background())
+			// this "uncancels" the original context which ignores its cancelation
+			// but keeps the values of the original context available to callers
+			ctx, cancel := uncancelContext(ctx)
 			e.cancelFunc = cancel
+			asyncError.Ctx = ctx
+			asyncError.CancelTransition = cancel
 			f.transition = transitionFunc(ctx, true)
 			return asyncError
 		}
@@ -440,7 +444,7 @@ func (f *FSM) leaveStateCallbacks(ctx context.Context, e *Event) error {
 		if e.canceled {
 			return CanceledError{e.Err}
 		} else if e.async {
-			return AsyncError{e.Err}
+			return AsyncError{Err: e.Err}
 		}
 	}
 	if fn, ok := f.callbacks[cKey{"", callbackLeaveState}]; ok {
@@ -448,7 +452,7 @@ func (f *FSM) leaveStateCallbacks(ctx context.Context, e *Event) error {
 		if e.canceled {
 			return CanceledError{e.Err}
 		} else if e.async {
-			return AsyncError{e.Err}
+			return AsyncError{Err: e.Err}
 		}
 	}
 	return nil

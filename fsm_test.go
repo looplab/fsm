@@ -527,6 +527,42 @@ func TestAsyncTransitionNotInProgress(t *testing.T) {
 	}
 }
 
+func TestCancelAsyncTransition(t *testing.T) {
+	fsm := NewFSM(
+		"start",
+		Events{
+			{Name: "run", Src: []string{"start"}, Dst: "end"},
+		},
+		Callbacks{
+			"leave_start": func(_ context.Context, e *Event) {
+				e.Async()
+			},
+		},
+	)
+	err := fsm.Event(context.Background(), "run")
+	asyncError, ok := err.(AsyncError)
+	if !ok {
+		t.Errorf("expected error to be 'AsyncError', got %v", err)
+	}
+	var asyncStateTransitionWasCanceled bool
+	go func() {
+		<-asyncError.Ctx.Done()
+		asyncStateTransitionWasCanceled = true
+	}()
+	asyncError.CancelTransition()
+	time.Sleep(20 * time.Millisecond)
+
+	if err = fsm.Transition(); err != nil {
+		t.Errorf("expected no error, got %v", err)
+	}
+	if !asyncStateTransitionWasCanceled {
+		t.Error("expected async state transition cancelation to have propagated")
+	}
+	if fsm.Current() != "start" {
+		t.Error("expected state to be 'start'")
+	}
+}
+
 func TestCallbackNoError(t *testing.T) {
 	fsm := NewFSM(
 		"start",
