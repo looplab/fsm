@@ -16,6 +16,7 @@ package fsm
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"sync"
@@ -695,6 +696,47 @@ func TestDoubleTransition(t *testing.T) {
 	wg.Wait()
 }
 
+func TestTransitionInCallbacks(t *testing.T) {
+	var fsm *FSM
+	var afterFinishCalled bool
+	fsm = NewFSM(
+		"start",
+		Events{
+			{Name: "run", Src: []string{"start"}, Dst: "end"},
+			{Name: "finish", Src: []string{"end"}, Dst: "finished"},
+			{Name: "reset", Src: []string{"end", "finished"}, Dst: "start"},
+		},
+		Callbacks{
+			"enter_end": func(ctx context.Context, e *Event) {
+				if err := e.FSM.Event(ctx, "finish"); err != nil {
+					fmt.Println(err)
+				}
+			},
+			"after_finish": func(ctx context.Context, e *Event) {
+				afterFinishCalled = true
+				if e.Src != "end" {
+					panic(fmt.Sprintf("source should have been 'end' but was '%s'", e.Src))
+				}
+				if err := e.FSM.Event(ctx, "reset"); err != nil {
+					fmt.Println(err)
+				}
+			},
+		},
+	)
+
+	if err := fsm.Event(context.Background(), "run"); err != nil {
+		t.Errorf("expected no error, got %v", err)
+	}
+	if !afterFinishCalled {
+		t.Error("expected after_finish callback to have been executed but it wasn't")
+	}
+
+	currentState := fsm.Current()
+	if currentState != "start" {
+		t.Errorf("expected state to be 'start', was '%s'", currentState)
+	}
+}
+
 func TestContextInCallbacks(t *testing.T) {
 	var fsm *FSM
 	var enterEndAsyncWorkDone bool
@@ -711,6 +753,11 @@ func TestContextInCallbacks(t *testing.T) {
 					<-ctx.Done()
 					enterEndAsyncWorkDone = true
 				}()
+
+				<-ctx.Done()
+				if err := e.FSM.Event(ctx, "finish"); err != nil {
+					e.Err = fmt.Errorf("transitioning to the finished state failed: %w", err)
+				}
 			},
 		},
 	)
@@ -719,7 +766,10 @@ func TestContextInCallbacks(t *testing.T) {
 	go func() {
 		cancel()
 	}()
-	fsm.Event(ctx, "run")
+	err := fsm.Event(ctx, "run")
+	if !errors.Is(err, context.Canceled) {
+		t.Errorf("expected 'context canceled' error, got %v", err)
+	}
 	time.Sleep(20 * time.Millisecond)
 
 	if !enterEndAsyncWorkDone {
