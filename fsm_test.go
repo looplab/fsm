@@ -15,6 +15,7 @@
 package fsm
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"sync"
@@ -692,6 +693,43 @@ func TestDoubleTransition(t *testing.T) {
 		fmt.Println(err)
 	}
 	wg.Wait()
+}
+
+func TestContextInCallbacks(t *testing.T) {
+	var fsm *FSM
+	var enterEndAsyncWorkDone bool
+	fsm = NewFSM(
+		"start",
+		Events{
+			{Name: "run", Src: []string{"start"}, Dst: "end"},
+			{Name: "finish", Src: []string{"end"}, Dst: "finished"},
+			{Name: "reset", Src: []string{"end", "finished"}, Dst: "start"},
+		},
+		Callbacks{
+			"enter_end": func(ctx context.Context, e *Event) {
+				go func() {
+					<-ctx.Done()
+					enterEndAsyncWorkDone = true
+				}()
+			},
+		},
+	)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		cancel()
+	}()
+	fsm.Event(ctx, "run")
+	time.Sleep(20 * time.Millisecond)
+
+	if !enterEndAsyncWorkDone {
+		t.Error("expected asynchronous work in callback to be done but it wasn't")
+	}
+
+	currentState := fsm.Current()
+	if currentState != "end" {
+		t.Errorf("expected state to be 'end', was '%s'", currentState)
+	}
 }
 
 func TestNoTransition(t *testing.T) {
