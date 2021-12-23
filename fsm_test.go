@@ -668,6 +668,12 @@ func ExampleNewFSM() {
 			"leave_state": func(e *Event) {
 				fmt.Println("leave_state")
 			},
+			"beforeEnter_yellow": func(e *Event) {
+				fmt.Println("beforeEnter_yellow")
+			},
+			"beforeEnter_state": func(e *Event) {
+				fmt.Println("beforeEnter_state")
+			},
 			"enter_yellow": func(e *Event) {
 				fmt.Println("enter_yellow")
 			},
@@ -694,6 +700,8 @@ func ExampleNewFSM() {
 	// before_event
 	// leave_green
 	// leave_state
+	// beforeEnter_yellow
+	// beforeEnter_state
 	// enter_yellow
 	// enter_state
 	// after_warn
