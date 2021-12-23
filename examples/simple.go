@@ -1,9 +1,12 @@
+//go:build ignore
 // +build ignore
 
 package main
 
 import (
+	"context"
 	"fmt"
+
 	"github.com/looplab/fsm"
 )
 
@@ -19,14 +22,14 @@ func main() {
 
 	fmt.Println(fsm.Current())
 
-	err := fsm.Event("open")
+	err := fsm.Event(context.Background(), "open")
 	if err != nil {
 		fmt.Println(err)
 	}
 
 	fmt.Println(fsm.Current())
 
-	err = fsm.Event("close")
+	err = fsm.Event(context.Background(), "close")
 	if err != nil {
 		fmt.Println(err)
 	}
