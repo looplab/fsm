@@ -224,7 +224,6 @@ func (f *FSM) SetState(state string) {
 	f.stateMu.Lock()
 	defer f.stateMu.Unlock()
 	f.current = state
-	return
 }
 
 // Can returns true if event can occur in the current state.

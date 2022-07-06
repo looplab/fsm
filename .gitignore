@@ -29,3 +29,5 @@ _testmain.go
 
 # Testing
 .coverprofile
+
+.vscode
