@@ -4,6 +4,10 @@ default: services test
 test:
 	go test ./...
 
+.PHONY: lint
+lint:
+	golangci-lint run
+
 .PHONY: cover
 cover:
 	go list -f '{{if len .TestGoFiles}}"go test -coverprofile={{.Dir}}/.coverprofile {{.ImportPath}}"{{end}}' ./... | xargs -L 1 sh -c

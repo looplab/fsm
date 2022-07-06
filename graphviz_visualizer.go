@@ -22,7 +22,7 @@ func Visualize(fsm *FSM) string {
 }
 
 func writeHeaderLine(buf *bytes.Buffer) {
-	buf.WriteString(fmt.Sprintf(`digraph fsm {`))
+	buf.WriteString(`digraph fsm {`)
 	buf.WriteString("\n")
 }
 
