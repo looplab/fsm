@@ -6,7 +6,7 @@ import (
 )
 
 // Visualize outputs a visualization of a FSM in Graphviz format.
-func Visualize(fsm *FSM) string {
+func Visualize[E FSMEvent](fsm *FSM[E]) string {
 	var buf bytes.Buffer
 
 	// we sort the key alphabetically to have a reproducible graph output

@@ -18,7 +18,7 @@ const (
 )
 
 // VisualizeForMermaidWithGraphType outputs a visualization of a FSM in Mermaid format as specified by the graphType.
-func VisualizeForMermaidWithGraphType(fsm *FSM, graphType MermaidDiagramType) (string, error) {
+func VisualizeForMermaidWithGraphType[E FSMEvent](fsm *FSM[E], graphType MermaidDiagramType) (string, error) {
 	switch graphType {
 	case FlowChart:
 		return visualizeForMermaidAsFlowChart(fsm), nil
@@ -29,7 +29,7 @@ func VisualizeForMermaidWithGraphType(fsm *FSM, graphType MermaidDiagramType) (s
 	}
 }
 
-func visualizeForMermaidAsStateDiagram(fsm *FSM) string {
+func visualizeForMermaidAsStateDiagram[E FSMEvent](fsm *FSM[E]) string {
 	var buf bytes.Buffer
 
 	sortedTransitionKeys := getSortedTransitionKeys(fsm.transitions)
@@ -47,7 +47,7 @@ func visualizeForMermaidAsStateDiagram(fsm *FSM) string {
 }
 
 // visualizeForMermaidAsFlowChart outputs a visualization of a FSM in Mermaid format (including highlighting of current state).
-func visualizeForMermaidAsFlowChart(fsm *FSM) string {
+func visualizeForMermaidAsFlowChart[E FSMEvent](fsm *FSM[E]) string {
 	var buf bytes.Buffer
 
 	sortedTransitionKeys := getSortedTransitionKeys(fsm.transitions)

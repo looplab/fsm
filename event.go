@@ -14,10 +14,14 @@
 
 package fsm
 
+type FSMEvent interface {
+	string
+}
+
 // Event is the info that get passed as a reference in the callbacks.
-type Event struct {
+type Event[E FSMEvent] struct {
 	// FSM is an reference to the current FSM.
-	FSM *FSM
+	FSM *FSM[E]
 
 	// Event is the event name.
 	Event string
@@ -44,7 +48,7 @@ type Event struct {
 // Cancel can be called in before_<EVENT> or leave_<STATE> to cancel the
 // current transition before it happens. It takes an optional error, which will
 // overwrite e.Err if set before.
-func (e *Event) Cancel(err ...error) {
+func (e *Event[E]) Cancel(err ...error) {
 	e.canceled = true
 
 	if len(err) > 0 {
@@ -57,6 +61,6 @@ func (e *Event) Cancel(err ...error) {
 // The current state transition will be on hold in the old state until a final
 // call to Transition is made. This will complete the transition and possibly
 // call the other callbacks.
-func (e *Event) Async() {
+func (e *Event[E]) Async() {
 	e.async = true
 }

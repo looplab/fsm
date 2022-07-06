@@ -14,7 +14,7 @@ func TestGraphvizOutput(t *testing.T) {
 			{Name: "close", Src: []string{"open"}, Dst: "closed"},
 			{Name: "part-close", Src: []string{"intermediate"}, Dst: "closed"},
 		},
-		Callbacks{},
+		Callbacks[string]{},
 	)
 
 	got := Visualize(fsmUnderTest)

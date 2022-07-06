@@ -21,7 +21,7 @@ const (
 
 // VisualizeWithType outputs a visualization of a FSM in the desired format.
 // If the type is not given it defaults to GRAPHVIZ
-func VisualizeWithType(fsm *FSM, visualizeType VisualizeType) (string, error) {
+func VisualizeWithType[E FSMEvent](fsm *FSM[E], visualizeType VisualizeType) (string, error) {
 	switch visualizeType {
 	case GRAPHVIZ:
 		return Visualize(fsm), nil

@@ -14,7 +14,7 @@ func TestMermaidOutput(t *testing.T) {
 			{Name: "close", Src: []string{"open"}, Dst: "closed"},
 			{Name: "part-close", Src: []string{"intermediate"}, Dst: "closed"},
 		},
-		Callbacks{},
+		Callbacks[string]{},
 	)
 
 	got, err := VisualizeForMermaidWithGraphType(fsmUnderTest, StateDiagram)
@@ -47,7 +47,7 @@ func TestMermaidFlowChartOutput(t *testing.T) {
 			{Name: "close", Src: []string{"open"}, Dst: "closed"},
 			{Name: "part-close", Src: []string{"intermediate"}, Dst: "closed"},
 		},
-		Callbacks{},
+		Callbacks[string]{},
 	)
 
 	got, err := VisualizeForMermaidWithGraphType(fsmUnderTest, FlowChart)
