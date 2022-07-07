@@ -938,3 +938,38 @@ func ExampleFSM_Event_Generic() {
 	// open
 	// closed
 }
+
+func BenchmarkGenericFSM(b *testing.B) {
+	fsm := New(
+		IsClosed,
+		Transitions[MyEvent, MyState]{
+			{Event: Open, Src: []MyState{IsClosed}, Dst: IsOpen},
+			{Event: Close, Src: []MyState{IsOpen}, Dst: IsClosed},
+		},
+		Callbacks[MyEvent, MyState]{
+			Any: func(cr *CallbackContext[MyEvent, MyState]) {
+
+			},
+		},
+	)
+	for i := 0; i < b.N; i++ {
+		fsm.Event(Open)
+	}
+}
+func BenchmarkFSM(b *testing.B) {
+	fsm := New(
+		"closed",
+		Transitions[string, string]{
+			{Event: "open", Src: []string{"closed"}, Dst: "open"},
+			{Event: "close", Src: []string{"open"}, Dst: "closed"},
+		},
+		Callbacks[string, string]{
+			"": func(cr *CallbackContext[string, string]) {
+
+			},
+		},
+	)
+	for i := 0; i < b.N; i++ {
+		fsm.Event("open")
+	}
+}
