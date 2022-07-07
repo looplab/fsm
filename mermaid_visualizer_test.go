@@ -9,12 +9,12 @@ import (
 func TestMermaidOutput(t *testing.T) {
 	fsmUnderTest := NewFSM(
 		"closed",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "open", Src: []string{"closed"}, Dst: "open"},
 			{Event: "close", Src: []string{"open"}, Dst: "closed"},
 			{Event: "part-close", Src: []string{"intermediate"}, Dst: "closed"},
 		},
-		Callbacks[string]{},
+		Callbacks[string, string]{},
 	)
 
 	got, err := VisualizeForMermaidWithGraphType(fsmUnderTest, StateDiagram)
@@ -40,14 +40,14 @@ stateDiagram-v2
 func TestMermaidFlowChartOutput(t *testing.T) {
 	fsmUnderTest := NewFSM(
 		"closed",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "open", Src: []string{"closed"}, Dst: "open"},
 			{Event: "part-open", Src: []string{"closed"}, Dst: "intermediate"},
 			{Event: "part-open", Src: []string{"intermediate"}, Dst: "open"},
 			{Event: "close", Src: []string{"open"}, Dst: "closed"},
 			{Event: "part-close", Src: []string{"intermediate"}, Dst: "closed"},
 		},
-		Callbacks[string]{},
+		Callbacks[string, string]{},
 	)
 
 	got, err := VisualizeForMermaidWithGraphType(fsmUnderTest, FlowChart)

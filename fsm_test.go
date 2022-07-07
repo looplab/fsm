@@ -22,20 +22,20 @@ import (
 	"time"
 )
 
-type fakeTransitionerObj[E Event] struct {
+type fakeTransitionerObj[E Event, S State] struct {
 }
 
-func (t fakeTransitionerObj[E]) transition(f *FSM[E]) error {
+func (t fakeTransitionerObj[E, S]) transition(f *FSM[E, S]) error {
 	return &InternalError{}
 }
 
 func TestSameState(t *testing.T) {
 	fsm := NewFSM(
 		"start",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "start"},
 		},
-		Callbacks[string]{},
+		Callbacks[string, string]{},
 	)
 	_ = fsm.Event("run")
 	if fsm.Current() != "start" {
@@ -46,10 +46,10 @@ func TestSameState(t *testing.T) {
 func TestSetState(t *testing.T) {
 	fsm := NewFSM(
 		"walking",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "walk", Src: []string{"start"}, Dst: "walking"},
 		},
-		Callbacks[string]{},
+		Callbacks[string, string]{},
 	)
 	fsm.SetState("start")
 	if fsm.Current() != "start" {
@@ -64,12 +64,12 @@ func TestSetState(t *testing.T) {
 func TestBadTransition(t *testing.T) {
 	fsm := NewFSM(
 		"start",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "running"},
 		},
-		Callbacks[string]{},
+		Callbacks[string, string]{},
 	)
-	fsm.transitionerObj = new(fakeTransitionerObj[string])
+	fsm.transitionerObj = new(fakeTransitionerObj[string, string])
 	err := fsm.Event("run")
 	if err == nil {
 		t.Error("bad transition should give an error")
@@ -79,11 +79,11 @@ func TestBadTransition(t *testing.T) {
 func TestInappropriateEvent(t *testing.T) {
 	fsm := NewFSM(
 		"closed",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "open", Src: []string{"closed"}, Dst: "open"},
 			{Event: "close", Src: []string{"open"}, Dst: "closed"},
 		},
-		Callbacks[string]{},
+		Callbacks[string, string]{},
 	)
 	err := fsm.Event("close")
 	if e, ok := err.(InvalidEventError); !ok && e.Event != "close" && e.State != "closed" {
@@ -94,11 +94,11 @@ func TestInappropriateEvent(t *testing.T) {
 func TestInvalidEvent(t *testing.T) {
 	fsm := NewFSM(
 		"closed",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "open", Src: []string{"closed"}, Dst: "open"},
 			{Event: "close", Src: []string{"open"}, Dst: "closed"},
 		},
-		Callbacks[string]{},
+		Callbacks[string, string]{},
 	)
 	err := fsm.Event("lock")
 	if e, ok := err.(UnknownEventError); !ok && e.Event != "close" {
@@ -109,12 +109,12 @@ func TestInvalidEvent(t *testing.T) {
 func TestMultipleSources(t *testing.T) {
 	fsm := NewFSM(
 		"one",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "first", Src: []string{"one"}, Dst: "two"},
 			{Event: "second", Src: []string{"two"}, Dst: "three"},
 			{Event: "reset", Src: []string{"one", "two", "three"}, Dst: "one"},
 		},
-		Callbacks[string]{},
+		Callbacks[string, string]{},
 	)
 
 	err := fsm.Event("first")
@@ -154,14 +154,14 @@ func TestMultipleSources(t *testing.T) {
 func TestMultipleEvents(t *testing.T) {
 	fsm := NewFSM(
 		"start",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "first", Src: []string{"start"}, Dst: "one"},
 			{Event: "second", Src: []string{"start"}, Dst: "two"},
 			{Event: "reset", Src: []string{"one"}, Dst: "reset_one"},
 			{Event: "reset", Src: []string{"two"}, Dst: "reset_two"},
 			{Event: "reset", Src: []string{"reset_one", "reset_two"}, Dst: "start"},
 		},
-		Callbacks[string]{},
+		Callbacks[string, string]{},
 	)
 
 	err := fsm.Event("first")
@@ -211,20 +211,20 @@ func TestGenericCallbacks(t *testing.T) {
 
 	fsm := NewFSM(
 		"start",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
 		},
-		Callbacks[string]{
-			"before_event": func(e *CallbackReference[string]) {
+		Callbacks[string, string]{
+			"before_event": func(e *CallbackReference[string, string]) {
 				beforeEvent = true
 			},
-			"leave_state": func(e *CallbackReference[string]) {
+			"leave_state": func(e *CallbackReference[string, string]) {
 				leaveState = true
 			},
-			"enter_state": func(e *CallbackReference[string]) {
+			"enter_state": func(e *CallbackReference[string, string]) {
 				enterState = true
 			},
-			"after_event": func(e *CallbackReference[string]) {
+			"after_event": func(e *CallbackReference[string, string]) {
 				afterEvent = true
 			},
 		},
@@ -247,20 +247,20 @@ func TestSpecificCallbacks(t *testing.T) {
 
 	fsm := NewFSM(
 		"start",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
 		},
-		Callbacks[string]{
-			"before_run": func(e *CallbackReference[string]) {
+		Callbacks[string, string]{
+			"before_run": func(e *CallbackReference[string, string]) {
 				beforeEvent = true
 			},
-			"leave_start": func(e *CallbackReference[string]) {
+			"leave_start": func(e *CallbackReference[string, string]) {
 				leaveState = true
 			},
-			"enter_end": func(e *CallbackReference[string]) {
+			"enter_end": func(e *CallbackReference[string, string]) {
 				enterState = true
 			},
-			"after_run": func(e *CallbackReference[string]) {
+			"after_run": func(e *CallbackReference[string, string]) {
 				afterEvent = true
 			},
 		},
@@ -281,14 +281,14 @@ func TestSpecificCallbacksShortform(t *testing.T) {
 
 	fsm := NewFSM(
 		"start",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
 		},
-		Callbacks[string]{
-			"end": func(e *CallbackReference[string]) {
+		Callbacks[string, string]{
+			"end": func(e *CallbackReference[string, string]) {
 				enterState = true
 			},
-			"run": func(e *CallbackReference[string]) {
+			"run": func(e *CallbackReference[string, string]) {
 				afterEvent = true
 			},
 		},
@@ -308,11 +308,11 @@ func TestBeforeEventWithoutTransition(t *testing.T) {
 
 	fsm := NewFSM(
 		"start",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "dontrun", Src: []string{"start"}, Dst: "start"},
 		},
-		Callbacks[string]{
-			"before_event": func(e *CallbackReference[string]) {
+		Callbacks[string, string]{
+			"before_event": func(e *CallbackReference[string, string]) {
 				beforeEvent = true
 			},
 		},
@@ -334,11 +334,11 @@ func TestBeforeEventWithoutTransition(t *testing.T) {
 func TestCancelBeforeGenericEvent(t *testing.T) {
 	fsm := NewFSM(
 		"start",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
 		},
-		Callbacks[string]{
-			"before_event": func(e *CallbackReference[string]) {
+		Callbacks[string, string]{
+			"before_event": func(e *CallbackReference[string, string]) {
 				e.Cancel()
 			},
 		},
@@ -352,11 +352,11 @@ func TestCancelBeforeGenericEvent(t *testing.T) {
 func TestCancelBeforeSpecificEvent(t *testing.T) {
 	fsm := NewFSM(
 		"start",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
 		},
-		Callbacks[string]{
-			"before_run": func(e *CallbackReference[string]) {
+		Callbacks[string, string]{
+			"before_run": func(e *CallbackReference[string, string]) {
 				e.Cancel()
 			},
 		},
@@ -370,11 +370,11 @@ func TestCancelBeforeSpecificEvent(t *testing.T) {
 func TestCancelLeaveGenericState(t *testing.T) {
 	fsm := NewFSM(
 		"start",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
 		},
-		Callbacks[string]{
-			"leave_state": func(e *CallbackReference[string]) {
+		Callbacks[string, string]{
+			"leave_state": func(e *CallbackReference[string, string]) {
 				e.Cancel()
 			},
 		},
@@ -388,11 +388,11 @@ func TestCancelLeaveGenericState(t *testing.T) {
 func TestCancelLeaveSpecificState(t *testing.T) {
 	fsm := NewFSM(
 		"start",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
 		},
-		Callbacks[string]{
-			"leave_start": func(e *CallbackReference[string]) {
+		Callbacks[string, string]{
+			"leave_start": func(e *CallbackReference[string, string]) {
 				e.Cancel()
 			},
 		},
@@ -406,11 +406,11 @@ func TestCancelLeaveSpecificState(t *testing.T) {
 func TestCancelWithError(t *testing.T) {
 	fsm := NewFSM(
 		"start",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
 		},
-		Callbacks[string]{
-			"before_event": func(e *CallbackReference[string]) {
+		Callbacks[string, string]{
+			"before_event": func(e *CallbackReference[string, string]) {
 				e.Cancel(fmt.Errorf("error"))
 			},
 		},
@@ -432,11 +432,11 @@ func TestCancelWithError(t *testing.T) {
 func TestAsyncTransitionGenericState(t *testing.T) {
 	fsm := NewFSM(
 		"start",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
 		},
-		Callbacks[string]{
-			"leave_state": func(e *CallbackReference[string]) {
+		Callbacks[string, string]{
+			"leave_state": func(e *CallbackReference[string, string]) {
 				e.Async()
 			},
 		},
@@ -457,11 +457,11 @@ func TestAsyncTransitionGenericState(t *testing.T) {
 func TestAsyncTransitionSpecificState(t *testing.T) {
 	fsm := NewFSM(
 		"start",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
 		},
-		Callbacks[string]{
-			"leave_start": func(e *CallbackReference[string]) {
+		Callbacks[string, string]{
+			"leave_start": func(e *CallbackReference[string, string]) {
 				e.Async()
 			},
 		},
@@ -482,12 +482,12 @@ func TestAsyncTransitionSpecificState(t *testing.T) {
 func TestAsyncTransitionInProgress(t *testing.T) {
 	fsm := NewFSM(
 		"start",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
 			{Event: "reset", Src: []string{"end"}, Dst: "start"},
 		},
-		Callbacks[string]{
-			"leave_start": func(e *CallbackReference[string]) {
+		Callbacks[string, string]{
+			"leave_start": func(e *CallbackReference[string, string]) {
 				e.Async()
 			},
 		},
@@ -513,11 +513,11 @@ func TestAsyncTransitionInProgress(t *testing.T) {
 func TestAsyncTransitionNotInProgress(t *testing.T) {
 	fsm := NewFSM(
 		"start",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
 			{Event: "reset", Src: []string{"end"}, Dst: "start"},
 		},
-		Callbacks[string]{},
+		Callbacks[string, string]{},
 	)
 	err := fsm.Transition()
 	if _, ok := err.(NotInTransitionError); !ok {
@@ -528,11 +528,11 @@ func TestAsyncTransitionNotInProgress(t *testing.T) {
 func TestCallbackNoError(t *testing.T) {
 	fsm := NewFSM(
 		"start",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
 		},
-		Callbacks[string]{
-			"run": func(e *CallbackReference[string]) {
+		Callbacks[string, string]{
+			"run": func(e *CallbackReference[string, string]) {
 			},
 		},
 	)
@@ -545,11 +545,11 @@ func TestCallbackNoError(t *testing.T) {
 func TestCallbackError(t *testing.T) {
 	fsm := NewFSM(
 		"start",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
 		},
-		Callbacks[string]{
-			"run": func(e *CallbackReference[string]) {
+		Callbacks[string, string]{
+			"run": func(e *CallbackReference[string, string]) {
 				e.Err = fmt.Errorf("error")
 			},
 		},
@@ -563,11 +563,11 @@ func TestCallbackError(t *testing.T) {
 func TestCallbackArgs(t *testing.T) {
 	fsm := NewFSM(
 		"start",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
 		},
-		Callbacks[string]{
-			"run": func(e *CallbackReference[string]) {
+		Callbacks[string, string]{
+			"run": func(e *CallbackReference[string, string]) {
 				if len(e.Args) != 1 {
 					t.Error("too few arguments")
 				}
@@ -597,11 +597,11 @@ func TestCallbackPanic(t *testing.T) {
 	}()
 	fsm := NewFSM(
 		"start",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
 		},
-		Callbacks[string]{
-			"run": func(e *CallbackReference[string]) {
+		Callbacks[string, string]{
+			"run": func(e *CallbackReference[string, string]) {
 				panic(panicMsg)
 			},
 		},
@@ -613,14 +613,14 @@ func TestCallbackPanic(t *testing.T) {
 }
 
 func TestNoDeadLock(t *testing.T) {
-	var fsm *FSM[string]
+	var fsm *FSM[string, string]
 	fsm = NewFSM(
 		"start",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
 		},
-		Callbacks[string]{
-			"run": func(e *CallbackReference[string]) {
+		Callbacks[string, string]{
+			"run": func(e *CallbackReference[string, string]) {
 				fsm.Current() // Should not result in a panic / deadlock
 			},
 		},
@@ -634,11 +634,11 @@ func TestNoDeadLock(t *testing.T) {
 func TestThreadSafetyRaceCondition(t *testing.T) {
 	fsm := NewFSM(
 		"start",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
 		},
-		Callbacks[string]{
-			"run": func(e *CallbackReference[string]) {
+		Callbacks[string, string]{
+			"run": func(e *CallbackReference[string, string]) {
 			},
 		},
 	)
@@ -656,16 +656,16 @@ func TestThreadSafetyRaceCondition(t *testing.T) {
 }
 
 func TestDoubleTransition(t *testing.T) {
-	var fsm *FSM[string]
+	var fsm *FSM[string, string]
 	var wg sync.WaitGroup
 	wg.Add(2)
 	fsm = NewFSM(
 		"start",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
 		},
-		Callbacks[string]{
-			"before_run": func(e *CallbackReference[string]) {
+		Callbacks[string, string]{
+			"before_run": func(e *CallbackReference[string, string]) {
 				wg.Done()
 				// Imagine a concurrent event coming in of the same type while
 				// the data access mutex is unlocked because the current transition
@@ -697,10 +697,10 @@ func TestDoubleTransition(t *testing.T) {
 func TestNoTransition(t *testing.T) {
 	fsm := NewFSM(
 		"start",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "start"},
 		},
-		Callbacks[string]{},
+		Callbacks[string, string]{},
 	)
 	err := fsm.Event("run")
 	if _, ok := err.(NoTransitionError); !ok {
@@ -711,36 +711,36 @@ func TestNoTransition(t *testing.T) {
 func ExampleNewFSM() {
 	fsm := NewFSM(
 		"green",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "warn", Src: []string{"green"}, Dst: "yellow"},
 			{Event: "panic", Src: []string{"yellow"}, Dst: "red"},
 			{Event: "panic", Src: []string{"green"}, Dst: "red"},
 			{Event: "calm", Src: []string{"red"}, Dst: "yellow"},
 			{Event: "clear", Src: []string{"yellow"}, Dst: "green"},
 		},
-		Callbacks[string]{
-			"before_warn": func(e *CallbackReference[string]) {
+		Callbacks[string, string]{
+			"before_warn": func(e *CallbackReference[string, string]) {
 				fmt.Println("before_warn")
 			},
-			"before_event": func(e *CallbackReference[string]) {
+			"before_event": func(e *CallbackReference[string, string]) {
 				fmt.Println("before_event")
 			},
-			"leave_green": func(e *CallbackReference[string]) {
+			"leave_green": func(e *CallbackReference[string, string]) {
 				fmt.Println("leave_green")
 			},
-			"leave_state": func(e *CallbackReference[string]) {
+			"leave_state": func(e *CallbackReference[string, string]) {
 				fmt.Println("leave_state")
 			},
-			"enter_yellow": func(e *CallbackReference[string]) {
+			"enter_yellow": func(e *CallbackReference[string, string]) {
 				fmt.Println("enter_yellow")
 			},
-			"enter_state": func(e *CallbackReference[string]) {
+			"enter_state": func(e *CallbackReference[string, string]) {
 				fmt.Println("enter_state")
 			},
-			"after_warn": func(e *CallbackReference[string]) {
+			"after_warn": func(e *CallbackReference[string, string]) {
 				fmt.Println("after_warn")
 			},
-			"after_event": func(e *CallbackReference[string]) {
+			"after_event": func(e *CallbackReference[string, string]) {
 				fmt.Println("after_event")
 			},
 		},
@@ -767,11 +767,11 @@ func ExampleNewFSM() {
 func ExampleFSM_Current() {
 	fsm := NewFSM(
 		"closed",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "open", Src: []string{"closed"}, Dst: "open"},
 			{Event: "close", Src: []string{"open"}, Dst: "closed"},
 		},
-		Callbacks[string]{},
+		Callbacks[string, string]{},
 	)
 	fmt.Println(fsm.Current())
 	// Output: closed
@@ -780,11 +780,11 @@ func ExampleFSM_Current() {
 func ExampleFSM_Is() {
 	fsm := NewFSM(
 		"closed",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "open", Src: []string{"closed"}, Dst: "open"},
 			{Event: "close", Src: []string{"open"}, Dst: "closed"},
 		},
-		Callbacks[string]{},
+		Callbacks[string, string]{},
 	)
 	fmt.Println(fsm.Is("closed"))
 	fmt.Println(fsm.Is("open"))
@@ -796,11 +796,11 @@ func ExampleFSM_Is() {
 func ExampleFSM_Can() {
 	fsm := NewFSM(
 		"closed",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "open", Src: []string{"closed"}, Dst: "open"},
 			{Event: "close", Src: []string{"open"}, Dst: "closed"},
 		},
-		Callbacks[string]{},
+		Callbacks[string, string]{},
 	)
 	fmt.Println(fsm.Can("open"))
 	fmt.Println(fsm.Can("close"))
@@ -812,12 +812,12 @@ func ExampleFSM_Can() {
 func ExampleFSM_AvailableTransitions() {
 	fsm := NewFSM(
 		"closed",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "open", Src: []string{"closed"}, Dst: "open"},
 			{Event: "close", Src: []string{"open"}, Dst: "closed"},
 			{Event: "kick", Src: []string{"closed"}, Dst: "broken"},
 		},
-		Callbacks[string]{},
+		Callbacks[string, string]{},
 	)
 	// sort the results ordering is consistent for the output checker
 	transitions := fsm.AvailableTransitions()
@@ -830,11 +830,11 @@ func ExampleFSM_AvailableTransitions() {
 func ExampleFSM_Cannot() {
 	fsm := NewFSM(
 		"closed",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "open", Src: []string{"closed"}, Dst: "open"},
 			{Event: "close", Src: []string{"open"}, Dst: "closed"},
 		},
-		Callbacks[string]{},
+		Callbacks[string, string]{},
 	)
 	fmt.Println(fsm.Cannot("open"))
 	fmt.Println(fsm.Cannot("close"))
@@ -846,11 +846,11 @@ func ExampleFSM_Cannot() {
 func ExampleFSM_Event() {
 	fsm := NewFSM(
 		"closed",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "open", Src: []string{"closed"}, Dst: "open"},
 			{Event: "close", Src: []string{"open"}, Dst: "closed"},
 		},
-		Callbacks[string]{},
+		Callbacks[string, string]{},
 	)
 	fmt.Println(fsm.Current())
 	err := fsm.Event("open")
@@ -872,12 +872,12 @@ func ExampleFSM_Event() {
 func ExampleFSM_Transition() {
 	fsm := NewFSM(
 		"closed",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "open", Src: []string{"closed"}, Dst: "open"},
 			{Event: "close", Src: []string{"open"}, Dst: "closed"},
 		},
-		Callbacks[string]{
-			"leave_closed": func(e *CallbackReference[string]) {
+		Callbacks[string, string]{
+			"leave_closed": func(e *CallbackReference[string, string]) {
 				e.Async()
 			},
 		},
@@ -898,20 +898,24 @@ func ExampleFSM_Transition() {
 }
 
 type MyEvent string
+type MyState string
 
 const (
 	Close MyEvent = "close"
 	Open  MyEvent = "open"
+
+	IsClosed MyState = "closed"
+	IsOpen   MyState = "open"
 )
 
 func ExampleFSM_Event_Generic() {
 	fsm := NewFSM(
-		"closed",
-		StateMachine[MyEvent]{
-			{Event: Open, Src: []string{"closed"}, Dst: "open"},
-			{Event: Close, Src: []string{"open"}, Dst: "closed"},
+		IsClosed,
+		StateMachine[MyEvent, MyState]{
+			{Event: Open, Src: []MyState{IsClosed}, Dst: IsOpen},
+			{Event: Close, Src: []MyState{IsOpen}, Dst: IsClosed},
 		},
-		Callbacks[MyEvent]{},
+		Callbacks[MyEvent, MyState]{},
 	)
 	fmt.Println(fsm.Current())
 	err := fsm.Event(Open)

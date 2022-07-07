@@ -9,12 +9,12 @@ import (
 func TestGraphvizOutput(t *testing.T) {
 	fsmUnderTest := NewFSM(
 		"closed",
-		StateMachine[string]{
+		StateMachine[string, string]{
 			{Event: "open", Src: []string{"closed"}, Dst: "open"},
 			{Event: "close", Src: []string{"open"}, Dst: "closed"},
 			{Event: "part-close", Src: []string{"intermediate"}, Dst: "closed"},
 		},
-		Callbacks[string]{},
+		Callbacks[string, string]{},
 	)
 
 	got := Visualize(fsmUnderTest)

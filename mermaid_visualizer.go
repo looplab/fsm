@@ -18,7 +18,7 @@ const (
 )
 
 // VisualizeForMermaidWithGraphType outputs a visualization of a FSM in Mermaid format as specified by the graphType.
-func VisualizeForMermaidWithGraphType[E Event](fsm *FSM[E], graphType MermaidDiagramType) (string, error) {
+func VisualizeForMermaidWithGraphType[E Event, S State](fsm *FSM[E, S], graphType MermaidDiagramType) (string, error) {
 	switch graphType {
 	case FlowChart:
 		return visualizeForMermaidAsFlowChart(fsm), nil
@@ -29,7 +29,7 @@ func VisualizeForMermaidWithGraphType[E Event](fsm *FSM[E], graphType MermaidDia
 	}
 }
 
-func visualizeForMermaidAsStateDiagram[E Event](fsm *FSM[E]) string {
+func visualizeForMermaidAsStateDiagram[E Event, S State](fsm *FSM[E, S]) string {
 	var buf bytes.Buffer
 
 	sortedTransitionKeys := getSortedTransitionKeys(fsm.transitions)
@@ -47,7 +47,7 @@ func visualizeForMermaidAsStateDiagram[E Event](fsm *FSM[E]) string {
 }
 
 // visualizeForMermaidAsFlowChart outputs a visualization of a FSM in Mermaid format (including highlighting of current state).
-func visualizeForMermaidAsFlowChart[E Event](fsm *FSM[E]) string {
+func visualizeForMermaidAsFlowChart[E Event, S State](fsm *FSM[E, S]) string {
 	var buf bytes.Buffer
 
 	sortedTransitionKeys := getSortedTransitionKeys(fsm.transitions)
@@ -65,7 +65,7 @@ func writeFlowChartGraphType(buf *bytes.Buffer) {
 	buf.WriteString("graph LR\n")
 }
 
-func writeFlowChartStates(buf *bytes.Buffer, sortedStates []string, statesToIDMap map[string]string) {
+func writeFlowChartStates[S State](buf *bytes.Buffer, sortedStates []S, statesToIDMap map[S]string) {
 	for _, state := range sortedStates {
 		buf.WriteString(fmt.Sprintf(`    %s[%s]`, statesToIDMap[state], state))
 		buf.WriteString("\n")
@@ -74,7 +74,7 @@ func writeFlowChartStates(buf *bytes.Buffer, sortedStates []string, statesToIDMa
 	buf.WriteString("\n")
 }
 
-func writeFlowChartTransitions[E Event](buf *bytes.Buffer, transitions map[eKey[E]]string, sortedTransitionKeys []eKey[E], statesToIDMap map[string]string) {
+func writeFlowChartTransitions[E Event, S State](buf *bytes.Buffer, transitions map[eKey[E, S]]S, sortedTransitionKeys []eKey[E, S], statesToIDMap map[S]string) {
 	for _, transition := range sortedTransitionKeys {
 		target := transitions[transition]
 		buf.WriteString(fmt.Sprintf(`    %s --> |%s| %s`, statesToIDMap[transition.src], transition.event, statesToIDMap[target]))
@@ -83,7 +83,7 @@ func writeFlowChartTransitions[E Event](buf *bytes.Buffer, transitions map[eKey[
 	buf.WriteString("\n")
 }
 
-func writeFlowChartHighlightCurrent(buf *bytes.Buffer, current string, statesToIDMap map[string]string) {
+func writeFlowChartHighlightCurrent[S State](buf *bytes.Buffer, current S, statesToIDMap map[S]string) {
 	buf.WriteString(fmt.Sprintf(`    style %s fill:%s`, statesToIDMap[current], highlightingColor))
 	buf.WriteString("\n")
 }

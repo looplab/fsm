@@ -17,20 +17,26 @@ package fsm
 type Event interface {
 	~string
 }
+type State interface {
+	~string
+}
+type EventOrState interface {
+	Event | State
+}
 
 // CallbackReference is the info that get passed as a reference in the callbacks.
-type CallbackReference[E Event] struct {
+type CallbackReference[E Event, S State] struct {
 	// fsm is an reference to the current fsm.
-	fsm *FSM[E]
+	fsm *FSM[E, S]
 
 	// Event is the event name.
-	Event string
+	Event E
 
 	// Src is the state before the transition.
-	Src string
+	Src S
 
 	// Dst is the state after the transition.
-	Dst string
+	Dst S
 
 	// Err is an optional error that can be returned from a callback.
 	Err error
@@ -48,7 +54,7 @@ type CallbackReference[E Event] struct {
 // Cancel can be called in before_<EVENT> or leave_<STATE> to cancel the
 // current transition before it happens. It takes an optional error, which will
 // overwrite e.Err if set before.
-func (e *CallbackReference[E]) Cancel(err ...error) {
+func (e *CallbackReference[E, S]) Cancel(err ...error) {
 	e.canceled = true
 
 	if len(err) > 0 {
@@ -61,6 +67,6 @@ func (e *CallbackReference[E]) Cancel(err ...error) {
 // The current state transition will be on hold in the old state until a final
 // call to Transition is made. This will complete the transition and possibly
 // call the other callbacks.
-func (e *CallbackReference[E]) Async() {
+func (e *CallbackReference[E, S]) Async() {
 	e.async = true
 }
