@@ -59,7 +59,7 @@ type FSM[E Event, S State] struct {
 	eventMu sync.Mutex
 	// metadata can be used to store and load data that maybe used across events
 	// use methods SetMetadata() and Metadata() to store and load data
-	metadata map[string]interface{}
+	metadata map[string]any
 
 	metadataMu sync.RWMutex
 }
@@ -134,7 +134,7 @@ func NewFSM[E Event, S State](initial S, events []StateMachineEntry[E, S], callb
 		current:         initial,
 		transitions:     make(map[eKey[E, S]]S),
 		callbacks:       make(map[cKey[E]]Callback[E, S]),
-		metadata:        make(map[string]interface{}),
+		metadata:        make(map[string]any),
 	}
 
 	// Build transition map and store sets of all events and states.
@@ -255,7 +255,7 @@ func (f *FSM[E, S]) Cannot(event E) bool {
 }
 
 // Metadata returns the value stored in metadata
-func (f *FSM[E, S]) Metadata(key string) (interface{}, bool) {
+func (f *FSM[E, S]) Metadata(key string) (any, bool) {
 	f.metadataMu.RLock()
 	defer f.metadataMu.RUnlock()
 	dataElement, ok := f.metadata[key]
@@ -263,10 +263,10 @@ func (f *FSM[E, S]) Metadata(key string) (interface{}, bool) {
 }
 
 // SetMetadata stores the dataValue in metadata indexing it with key
-func (f *FSM[E, S]) SetMetadata(key string, dataValue interface{}) {
+func (f *FSM[E, S]) SetMetadata(key string, value any) {
 	f.metadataMu.Lock()
 	defer f.metadataMu.Unlock()
-	f.metadata[key] = dataValue
+	f.metadata[key] = value
 }
 
 // Event initiates a state transition with the named event.
@@ -286,7 +286,7 @@ func (f *FSM[E, S]) SetMetadata(key string, dataValue interface{}) {
 //
 // The last error should never occur in this situation and is a sign of an
 // internal bug.
-func (f *FSM[E, S]) Event(event E, args ...interface{}) error {
+func (f *FSM[E, S]) Event(event E, args ...any) error {
 	f.eventMu.Lock()
 	defer f.eventMu.Unlock()
 

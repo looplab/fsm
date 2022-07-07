@@ -2,7 +2,7 @@ default: services test
 
 .PHONY: test
 test:
-	go test -v -race ./...
+	CGO_ENABLED=1 go test ./... -v -race -coverprofile=coverage.out -covermode=atomic && go tool cover -func=coverage.out
 
 .PHONY: lint
 lint:

@@ -42,7 +42,7 @@ type CallbackReference[E Event, S State] struct {
 	Err error
 
 	// Args is an optional list of arguments passed to the callback.
-	Args []interface{}
+	Args []any
 
 	// canceled is an internal flag set if the transition is canceled.
 	canceled bool
