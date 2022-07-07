@@ -10,9 +10,9 @@ import (
 )
 
 func main() {
-	fsm := fsm.NewFSM(
+	fsm := fsm.New(
 		"idle",
-		fsm.Flows[string, string]{
+		fsm.Transistions[string, string]{
 			{Event: "produce", Src: []string{"idle"}, Dst: "idle"},
 			{Event: "consume", Src: []string{"idle"}, Dst: "idle"},
 		},

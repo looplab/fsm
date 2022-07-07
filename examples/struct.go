@@ -19,9 +19,9 @@ func NewDoor(to string) *Door {
 		To: to,
 	}
 
-	d.FSM = fsm.NewFSM(
+	d.FSM = fsm.New(
 		"closed",
-		fsm.Flows[string, string]{
+		fsm.Transistions[string, string]{
 			{Event: "open", Src: []string{"closed"}, Dst: "open"},
 			{Event: "close", Src: []string{"open"}, Dst: "closed"},
 		},

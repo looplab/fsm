@@ -11,9 +11,9 @@ import (
 
 func main() {
 
-	fsm := fsm.NewFSM(
+	fsm := fsm.New(
 		"idle",
-		fsm.Flows[string, string]{
+		fsm.Transistions[string, string]{
 			{Event: "scan", Src: []string{"idle"}, Dst: "scanning"},
 			{Event: "working", Src: []string{"scanning"}, Dst: "scanning"},
 			{Event: "situation", Src: []string{"scanning"}, Dst: "scanning"},

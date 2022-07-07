@@ -28,7 +28,7 @@ import (
 )
 
 func main() {
-    fsm := fsm.NewFSM(
+    fsm := fsm.New(
         "closed",
         fsm.Events{
             {Name: "open", Src: []string{"closed"}, Dst: "open"},
@@ -77,7 +77,7 @@ func NewDoor(to string) *Door {
         To: to,
     }
 
-    d.FSM = fsm.NewFSM(
+    d.FSM = fsm.New(
         "closed",
         fsm.Events{
             {Name: "open", Src: []string{"closed"}, Dst: "open"},

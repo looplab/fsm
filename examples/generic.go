@@ -19,9 +19,9 @@ const (
 )
 
 func main() {
-	fsm := fsm.NewFSM(
+	fsm := fsm.New(
 		IsClosed,
-		fsm.Flows[MyEvent, MyState]{
+		fsm.Transitions[MyEvent, MyState]{
 			{Event: Open, Src: []MyState{IsClosed}, Dst: IsOpen},
 			{Event: Close, Src: []MyState{IsOpen}, Dst: IsClosed},
 		},

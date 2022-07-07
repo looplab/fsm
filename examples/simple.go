@@ -10,9 +10,9 @@ import (
 )
 
 func main() {
-	fsm := fsm.NewFSM(
+	fsm := fsm.New(
 		"closed",
-		fsm.Flows[string, string]{
+		fsm.Transistions[string, string]{
 			{Event: "open", Src: []string{"closed"}, Dst: "open"},
 			{Event: "close", Src: []string{"open"}, Dst: "closed"},
 		},

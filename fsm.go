@@ -64,12 +64,12 @@ type FSM[E Event, S State] struct {
 	metadataMu sync.RWMutex
 }
 
-// Flow represents an event when initializing the FSM.
+// Transition represents an event when initializing the FSM.
 //
 // The event can have one or more source states that is valid for performing
 // the transition. If the FSM is in one of the source states it will end up in
 // the specified destination state, calling all defined callbacks as it goes.
-type Flow[E Event, S State] struct {
+type Transition[E Event, S State] struct {
 	// Event is the event name used when calling for a transition.
 	Event E
 
@@ -86,13 +86,13 @@ type Flow[E Event, S State] struct {
 // event info as the callback happens.
 type Callback[E Event, S State] func(*CallbackContext[E, S])
 
-// Flows is a shorthand for defining the transition map in NewFSM.
-type Flows[E Event, S State] []Flow[E, S]
+// Transitions is a shorthand for defining the transition map in NewFSM.
+type Transitions[E Event, S State] []Transition[E, S]
 
 // Callbacks is a shorthand for defining the callbacks in NewFSM.
 type Callbacks[E Event, S State] map[E]Callback[E, S]
 
-// NewFSM constructs a FSM from events and callbacks.
+// New constructs a FSM from events and callbacks.
 //
 // The events and transitions are specified as a slice of Event structs
 // specified as Events. Each Event is mapped to one or more internal
@@ -128,7 +128,7 @@ type Callbacks[E Event, S State] map[E]Callback[E, S]
 // which version of the callback will end up in the internal map. This is due
 // to the pseudo random nature of Go maps. No checking for multiple keys is
 // currently performed.
-func NewFSM[E Event, S State](initial S, events []Flow[E, S], callbacks map[E]Callback[E, S]) *FSM[E, S] {
+func New[E Event, S State](initial S, transitions []Transition[E, S], callbacks map[E]Callback[E, S]) *FSM[E, S] {
 	f := &FSM[E, S]{
 		transitionerObj: &transitionerStruct[E, S]{},
 		current:         initial,
@@ -140,7 +140,7 @@ func NewFSM[E Event, S State](initial S, events []Flow[E, S], callbacks map[E]Ca
 	// Build transition map and store sets of all events and states.
 	allEvents := make(map[E]bool)
 	allStates := make(map[S]bool)
-	for _, e := range events {
+	for _, e := range transitions {
 		for _, src := range e.Src {
 			f.transitions[eKey[E, S]{e.Event, src}] = e.Dst
 			allStates[src] = true
@@ -150,38 +150,38 @@ func NewFSM[E Event, S State](initial S, events []Flow[E, S], callbacks map[E]Ca
 	}
 
 	// Map all callbacks to events/states.
-	for name, fn := range callbacks {
+	for event, fn := range callbacks {
 		var target string
 		var callbackType int
 
-		name := string(name) // FIXME
+		eventName := string(event) // FIXME
 		switch {
-		case strings.HasPrefix(name, "before_"):
-			target = strings.TrimPrefix(name, "before_")
+		case strings.HasPrefix(eventName, "before_"):
+			target = strings.TrimPrefix(eventName, "before_")
 			if target == "event" {
 				target = ""
 				callbackType = callbackBeforeEvent
 			} else if _, ok := allEvents[E(target)]; ok { // FIXME
 				callbackType = callbackBeforeEvent
 			}
-		case strings.HasPrefix(name, "leave_"):
-			target = strings.TrimPrefix(name, "leave_")
+		case strings.HasPrefix(eventName, "leave_"):
+			target = strings.TrimPrefix(eventName, "leave_")
 			if target == "state" {
 				target = ""
 				callbackType = callbackLeaveState
 			} else if _, ok := allStates[S(target)]; ok {
 				callbackType = callbackLeaveState
 			}
-		case strings.HasPrefix(name, "enter_"):
-			target = strings.TrimPrefix(name, "enter_")
+		case strings.HasPrefix(eventName, "enter_"):
+			target = strings.TrimPrefix(eventName, "enter_")
 			if target == "state" {
 				target = ""
 				callbackType = callbackEnterState
 			} else if _, ok := allStates[S(target)]; ok {
 				callbackType = callbackEnterState
 			}
-		case strings.HasPrefix(name, "after_"):
-			target = strings.TrimPrefix(name, "after_")
+		case strings.HasPrefix(eventName, "after_"):
+			target = strings.TrimPrefix(eventName, "after_")
 			if target == "event" {
 				target = ""
 				callbackType = callbackAfterEvent
@@ -189,7 +189,7 @@ func NewFSM[E Event, S State](initial S, events []Flow[E, S], callbacks map[E]Ca
 				callbackType = callbackAfterEvent
 			}
 		default:
-			target = name
+			target = eventName
 			if _, ok := allStates[S(target)]; ok {
 				callbackType = callbackEnterState
 			} else if _, ok := allEvents[E(target)]; ok { // FIXME
