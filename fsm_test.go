@@ -903,6 +903,7 @@ type MyState string
 const (
 	Close MyEvent = "close"
 	Open  MyEvent = "open"
+	Any   MyEvent = ""
 
 	IsClosed MyState = "closed"
 	IsOpen   MyState = "open"
@@ -916,7 +917,7 @@ func ExampleFSM_Event_Generic() {
 			{Event: Close, Src: []MyState{IsOpen}, Dst: IsClosed},
 		},
 		Callbacks[MyEvent, MyState]{
-			"": func(cr *CallbackContext[MyEvent, MyState]) {
+			Any: func(cr *CallbackContext[MyEvent, MyState]) {
 
 			},
 		},

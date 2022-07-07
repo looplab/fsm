@@ -90,7 +90,7 @@ type Callback[E Event, S State] func(*CallbackContext[E, S])
 type Flows[E Event, S State] []Flow[E, S]
 
 // Callbacks is a shorthand for defining the callbacks in NewFSM.
-type Callbacks[E Event, S State] map[string]Callback[E, S]
+type Callbacks[E Event, S State] map[E]Callback[E, S]
 
 // NewFSM constructs a FSM from events and callbacks.
 //
@@ -128,7 +128,7 @@ type Callbacks[E Event, S State] map[string]Callback[E, S]
 // which version of the callback will end up in the internal map. This is due
 // to the pseudo random nature of Go maps. No checking for multiple keys is
 // currently performed.
-func NewFSM[E Event, S State](initial S, events []Flow[E, S], callbacks map[string]Callback[E, S]) *FSM[E, S] {
+func NewFSM[E Event, S State](initial S, events []Flow[E, S], callbacks map[E]Callback[E, S]) *FSM[E, S] {
 	f := &FSM[E, S]{
 		transitionerObj: &transitionerStruct[E, S]{},
 		current:         initial,
@@ -154,6 +154,7 @@ func NewFSM[E Event, S State](initial S, events []Flow[E, S], callbacks map[stri
 		var target string
 		var callbackType int
 
+		name := string(name) // FIXME
 		switch {
 		case strings.HasPrefix(name, "before_"):
 			target = strings.TrimPrefix(name, "before_")
