@@ -13,7 +13,7 @@ func main() {
 
 	fsm := fsm.NewFSM(
 		"idle",
-		fsm.StateMachine[string, string]{
+		fsm.Flows[string, string]{
 			{Event: "scan", Src: []string{"idle"}, Dst: "scanning"},
 			{Event: "working", Src: []string{"scanning"}, Dst: "scanning"},
 			{Event: "situation", Src: []string{"scanning"}, Dst: "scanning"},

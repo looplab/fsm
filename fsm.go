@@ -64,12 +64,12 @@ type FSM[E Event, S State] struct {
 	metadataMu sync.RWMutex
 }
 
-// StateMachineEntry represents an event when initializing the FSM.
+// Flow represents an event when initializing the FSM.
 //
 // The event can have one or more source states that is valid for performing
 // the transition. If the FSM is in one of the source states it will end up in
 // the specified destination state, calling all defined callbacks as it goes.
-type StateMachineEntry[E Event, S State] struct {
+type Flow[E Event, S State] struct {
 	// Event is the event name used when calling for a transition.
 	Event E
 
@@ -86,8 +86,8 @@ type StateMachineEntry[E Event, S State] struct {
 // event info as the callback happens.
 type Callback[E Event, S State] func(*CallbackReference[E, S])
 
-// StateMachine is a shorthand for defining the transition map in NewFSM.
-type StateMachine[E Event, S State] []StateMachineEntry[E, S]
+// Flows is a shorthand for defining the transition map in NewFSM.
+type Flows[E Event, S State] []Flow[E, S]
 
 // Callbacks is a shorthand for defining the callbacks in NewFSM.
 type Callbacks[E Event, S State] map[string]Callback[E, S]
@@ -128,7 +128,7 @@ type Callbacks[E Event, S State] map[string]Callback[E, S]
 // which version of the callback will end up in the internal map. This is due
 // to the pseudo random nature of Go maps. No checking for multiple keys is
 // currently performed.
-func NewFSM[E Event, S State](initial S, events []StateMachineEntry[E, S], callbacks map[string]Callback[E, S]) *FSM[E, S] {
+func NewFSM[E Event, S State](initial S, events []Flow[E, S], callbacks map[string]Callback[E, S]) *FSM[E, S] {
 	f := &FSM[E, S]{
 		transitionerObj: &transitionerStruct[E, S]{},
 		current:         initial,

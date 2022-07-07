@@ -12,7 +12,7 @@ import (
 func main() {
 	fsm := fsm.NewFSM(
 		"idle",
-		fsm.StateMachine[string, string]{
+		fsm.Flows[string, string]{
 			{Event: "produce", Src: []string{"idle"}, Dst: "idle"},
 			{Event: "consume", Src: []string{"idle"}, Dst: "idle"},
 		},
