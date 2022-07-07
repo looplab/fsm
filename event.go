@@ -26,8 +26,8 @@ type EventOrState interface {
 
 // CallbackReference is the info that get passed as a reference in the callbacks.
 type CallbackReference[E Event, S State] struct {
-	// fsm is an reference to the current fsm.
-	fsm *FSM[E, S]
+	// FSM is an reference to the current FSM.
+	FSM *FSM[E, S]
 
 	// Event is the event name.
 	Event E

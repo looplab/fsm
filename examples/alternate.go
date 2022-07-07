@@ -1,33 +1,36 @@
+//go:build ignore
 // +build ignore
 
 package main
 
 import (
 	"fmt"
+
 	"github.com/looplab/fsm"
 )
 
 func main() {
+
 	fsm := fsm.NewFSM(
 		"idle",
-		fsm.Events{
-			{Name: "scan", Src: []string{"idle"}, Dst: "scanning"},
-			{Name: "working", Src: []string{"scanning"}, Dst: "scanning"},
-			{Name: "situation", Src: []string{"scanning"}, Dst: "scanning"},
-			{Name: "situation", Src: []string{"idle"}, Dst: "idle"},
-			{Name: "finish", Src: []string{"scanning"}, Dst: "idle"},
+		fsm.StateMachine[string, string]{
+			{Event: "scan", Src: []string{"idle"}, Dst: "scanning"},
+			{Event: "working", Src: []string{"scanning"}, Dst: "scanning"},
+			{Event: "situation", Src: []string{"scanning"}, Dst: "scanning"},
+			{Event: "situation", Src: []string{"idle"}, Dst: "idle"},
+			{Event: "finish", Src: []string{"scanning"}, Dst: "idle"},
 		},
-		fsm.Callbacks{
-			"scan": func(e *fsm.Event) {
+		fsm.Callbacks[string, string]{
+			"scan": func(e *fsm.CallbackReference[string, string]) {
 				fmt.Println("after_scan: " + e.FSM.Current())
 			},
-			"working": func(e *fsm.Event) {
+			"working": func(e *fsm.CallbackReference[string, string]) {
 				fmt.Println("working: " + e.FSM.Current())
 			},
-			"situation": func(e *fsm.Event) {
+			"situation": func(e *fsm.CallbackReference[string, string]) {
 				fmt.Println("situation: " + e.FSM.Current())
 			},
-			"finish": func(e *fsm.Event) {
+			"finish": func(e *fsm.CallbackReference[string, string]) {
 				fmt.Println("finish: " + e.FSM.Current())
 			},
 		},

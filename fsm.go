@@ -447,7 +447,7 @@ const (
 )
 
 // cKey is a struct key used for keeping the callbacks mapped to a target.
-type cKey[ES EventOrState] struct {
+type cKey[ES EventOrState] struct { // FIXME Type
 	// target is either the name of a state or an event depending on which
 	// callback type the key refers to. It can also be "" for a non-targeted
 	// callback like before_event.
