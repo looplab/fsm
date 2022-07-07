@@ -50,8 +50,8 @@ type FSM[E Event, S State] struct {
 	// transition is the internal transition functions used either directly
 	// or when Transition is called in an asynchronous state transition.
 	transition func()
-	// transitionerObj calls the FSM's transition() function.
-	transitionerObj transitioner[E, S]
+	// transitioner calls the FSM's transition() function.
+	transitioner transitioner[E, S]
 
 	// stateMu guards access to the current state.
 	stateMu sync.RWMutex
@@ -70,7 +70,7 @@ type FSM[E Event, S State] struct {
 // the transition. If the FSM is in one of the source states it will end up in
 // the specified destination state, calling all defined callbacks as it goes.
 type Transition[E Event, S State] struct {
-	// Event is the event name used when calling for a transition.
+	// Event is the event used when calling for a transition.
 	Event E
 
 	// Src is a slice of source states that the FSM must be in to perform a
@@ -130,11 +130,11 @@ type Callbacks[E Event, S State] map[E]Callback[E, S]
 // currently performed.
 func New[E Event, S State](initial S, transitions []Transition[E, S], callbacks map[E]Callback[E, S]) *FSM[E, S] {
 	f := &FSM[E, S]{
-		transitionerObj: &transitionerStruct[E, S]{},
-		current:         initial,
-		transitions:     make(map[eKey[E, S]]S),
-		callbacks:       make(map[cKey[E]]Callback[E, S]),
-		metadata:        make(map[string]any),
+		transitioner: &defaultTransitioner[E, S]{},
+		current:      initial,
+		transitions:  make(map[eKey[E, S]]S),
+		callbacks:    make(map[cKey[E]]Callback[E, S]),
+		metadata:     make(map[string]any),
 	}
 
 	// Build transition map and store sets of all events and states.
@@ -357,18 +357,18 @@ func (f *FSM[E, S]) Transition() error {
 
 // doTransition wraps transitioner.transition.
 func (f *FSM[E, S]) doTransition() error {
-	return f.transitionerObj.transition(f)
+	return f.transitioner.transition(f)
 }
 
-// transitionerStruct is the default implementation of the transitioner
+// defaultTransitioner is the default implementation of the transitioner
 // interface. Other implementations can be swapped in for testing.
-type transitionerStruct[E Event, S State] struct{}
+type defaultTransitioner[E Event, S State] struct{}
 
 // Transition completes an asynchronous state change.
 //
 // The callback for leave_<STATE> must previously have called Async on its
 // event to have initiated an asynchronous state transition.
-func (t transitionerStruct[E, S]) transition(f *FSM[E, S]) error {
+func (t defaultTransitioner[E, S]) transition(f *FSM[E, S]) error {
 	if f.transition == nil {
 		return NotInTransitionError{}
 	}

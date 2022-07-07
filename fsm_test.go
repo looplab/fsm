@@ -22,10 +22,10 @@ import (
 	"time"
 )
 
-type fakeTransitionerObj[E Event, S State] struct {
+type fakeTransitioner[E Event, S State] struct {
 }
 
-func (t fakeTransitionerObj[E, S]) transition(f *FSM[E, S]) error {
+func (t fakeTransitioner[E, S]) transition(f *FSM[E, S]) error {
 	return &InternalError{}
 }
 
@@ -69,7 +69,7 @@ func TestBadTransition(t *testing.T) {
 		},
 		Callbacks[string, string]{},
 	)
-	fsm.transitionerObj = new(fakeTransitionerObj[string, string])
+	fsm.transitioner = new(fakeTransitioner[string, string])
 	err := fsm.Event("run")
 	if err == nil {
 		t.Error("bad transition should give an error")
