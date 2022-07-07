@@ -24,8 +24,8 @@ type EventOrState interface {
 	Event | State
 }
 
-// CallbackReference is the info that get passed as a reference in the callbacks.
-type CallbackReference[E Event, S State] struct {
+// CallbackContext is the info that get passed as a reference in the callbacks.
+type CallbackContext[E Event, S State] struct {
 	// FSM is an reference to the current FSM.
 	FSM *FSM[E, S]
 
@@ -54,7 +54,7 @@ type CallbackReference[E Event, S State] struct {
 // Cancel can be called in before_<EVENT> or leave_<STATE> to cancel the
 // current transition before it happens. It takes an optional error, which will
 // overwrite e.Err if set before.
-func (e *CallbackReference[E, S]) Cancel(err ...error) {
+func (e *CallbackContext[E, S]) Cancel(err ...error) {
 	e.canceled = true
 
 	if len(err) > 0 {
@@ -67,6 +67,6 @@ func (e *CallbackReference[E, S]) Cancel(err ...error) {
 // The current state transition will be on hold in the old state until a final
 // call to Transition is made. This will complete the transition and possibly
 // call the other callbacks.
-func (e *CallbackReference[E, S]) Async() {
+func (e *CallbackContext[E, S]) Async() {
 	e.async = true
 }

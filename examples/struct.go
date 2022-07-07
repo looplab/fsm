@@ -26,14 +26,14 @@ func NewDoor(to string) *Door {
 			{Event: "close", Src: []string{"open"}, Dst: "closed"},
 		},
 		fsm.Callbacks[string, string]{
-			"enter_state": func(e *fsm.CallbackReference[string, string]) { d.enterState(e) },
+			"enter_state": func(e *fsm.CallbackContext[string, string]) { d.enterState(e) },
 		},
 	)
 
 	return d
 }
 
-func (d *Door) enterState(e *fsm.CallbackReference[string, string]) {
+func (d *Door) enterState(e *fsm.CallbackContext[string, string]) {
 	fmt.Printf("The door to %s is %s\n", d.To, e.Dst)
 }
 

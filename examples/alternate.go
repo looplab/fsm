@@ -21,16 +21,16 @@ func main() {
 			{Event: "finish", Src: []string{"scanning"}, Dst: "idle"},
 		},
 		fsm.Callbacks[string, string]{
-			"scan": func(e *fsm.CallbackReference[string, string]) {
+			"scan": func(e *fsm.CallbackContext[string, string]) {
 				fmt.Println("after_scan: " + e.FSM.Current())
 			},
-			"working": func(e *fsm.CallbackReference[string, string]) {
+			"working": func(e *fsm.CallbackContext[string, string]) {
 				fmt.Println("working: " + e.FSM.Current())
 			},
-			"situation": func(e *fsm.CallbackReference[string, string]) {
+			"situation": func(e *fsm.CallbackContext[string, string]) {
 				fmt.Println("situation: " + e.FSM.Current())
 			},
-			"finish": func(e *fsm.CallbackReference[string, string]) {
+			"finish": func(e *fsm.CallbackContext[string, string]) {
 				fmt.Println("finish: " + e.FSM.Current())
 			},
 		},

@@ -17,11 +17,11 @@ func main() {
 			{Event: "consume", Src: []string{"idle"}, Dst: "idle"},
 		},
 		fsm.Callbacks[string, string]{
-			"produce": func(e *fsm.CallbackReference[string, string]) {
+			"produce": func(e *fsm.CallbackContext[string, string]) {
 				e.FSM.SetMetadata("message", "hii")
 				fmt.Println("produced data")
 			},
-			"consume": func(e *fsm.CallbackReference[string, string]) {
+			"consume": func(e *fsm.CallbackContext[string, string]) {
 				message, ok := e.FSM.Metadata("message")
 				if ok {
 					fmt.Println("message = " + message.(string))

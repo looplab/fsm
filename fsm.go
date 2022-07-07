@@ -84,7 +84,7 @@ type Flow[E Event, S State] struct {
 
 // Callback is a function type that callbacks should use. Event is the current
 // event info as the callback happens.
-type Callback[E Event, S State] func(*CallbackReference[E, S])
+type Callback[E Event, S State] func(*CallbackContext[E, S])
 
 // Flows is a shorthand for defining the transition map in NewFSM.
 type Flows[E Event, S State] []Flow[E, S]
@@ -236,13 +236,13 @@ func (f *FSM[E, S]) Can(event E) bool {
 
 // AvailableTransitions returns a list of transitions available in the
 // current state.
-func (f *FSM[E, S]) AvailableTransitions() []string {
+func (f *FSM[E, S]) AvailableTransitions() []E {
 	f.stateMu.RLock()
 	defer f.stateMu.RUnlock()
-	var transitions []string
+	var transitions []E
 	for key := range f.transitions {
 		if key.src == f.current {
-			transitions = append(transitions, string(key.event))
+			transitions = append(transitions, key.event)
 		}
 	}
 	return transitions
@@ -307,7 +307,7 @@ func (f *FSM[E, S]) Event(event E, args ...any) error {
 		return UnknownEventError{string(event)}
 	}
 
-	e := &CallbackReference[E, S]{f, event, f.current, dst, nil, args, false, false}
+	e := &CallbackContext[E, S]{f, event, f.current, dst, nil, args, false, false}
 
 	err := f.beforeEventCallbacks(e)
 	if err != nil {
@@ -378,7 +378,7 @@ func (t transitionerStruct[E, S]) transition(f *FSM[E, S]) error {
 
 // beforeEventCallbacks calls the before_ callbacks, first the named then the
 // general version.
-func (f *FSM[E, S]) beforeEventCallbacks(e *CallbackReference[E, S]) error {
+func (f *FSM[E, S]) beforeEventCallbacks(e *CallbackContext[E, S]) error {
 	if fn, ok := f.callbacks[cKey[E]{e.Event, callbackBeforeEvent}]; ok {
 		fn(e)
 		if e.canceled {
@@ -396,7 +396,7 @@ func (f *FSM[E, S]) beforeEventCallbacks(e *CallbackReference[E, S]) error {
 
 // leaveStateCallbacks calls the leave_ callbacks, first the named then the
 // general version.
-func (f *FSM[E, S]) leaveStateCallbacks(e *CallbackReference[E, S]) error {
+func (f *FSM[E, S]) leaveStateCallbacks(e *CallbackContext[E, S]) error {
 	if fn, ok := f.callbacks[cKey[E]{E(f.current), callbackLeaveState}]; ok { // FIXME
 		fn(e)
 		if e.canceled {
@@ -418,7 +418,7 @@ func (f *FSM[E, S]) leaveStateCallbacks(e *CallbackReference[E, S]) error {
 
 // enterStateCallbacks calls the enter_ callbacks, first the named then the
 // general version.
-func (f *FSM[E, S]) enterStateCallbacks(e *CallbackReference[E, S]) {
+func (f *FSM[E, S]) enterStateCallbacks(e *CallbackContext[E, S]) {
 	if fn, ok := f.callbacks[cKey[E]{E(f.current), callbackEnterState}]; ok { // FIXME
 		fn(e)
 	}
@@ -429,7 +429,7 @@ func (f *FSM[E, S]) enterStateCallbacks(e *CallbackReference[E, S]) {
 
 // afterEventCallbacks calls the after_ callbacks, first the named then the
 // general version.
-func (f *FSM[E, S]) afterEventCallbacks(e *CallbackReference[E, S]) {
+func (f *FSM[E, S]) afterEventCallbacks(e *CallbackContext[E, S]) {
 	if fn, ok := f.callbacks[cKey[E]{e.Event, callbackAfterEvent}]; ok {
 		fn(e)
 	}
