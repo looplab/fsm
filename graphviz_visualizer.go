@@ -6,7 +6,7 @@ import (
 )
 
 // Visualize outputs a visualization of a FSM in Graphviz format.
-func Visualize[E FSMEvent](fsm *FSM[E]) string {
+func Visualize[E Event](fsm *FSM[E]) string {
 	var buf bytes.Buffer
 
 	// we sort the key alphabetically to have a reproducible graph output
@@ -26,7 +26,7 @@ func writeHeaderLine(buf *bytes.Buffer) {
 	buf.WriteString("\n")
 }
 
-func writeTransitions(buf *bytes.Buffer, current string, sortedEKeys []eKey, transitions map[eKey]string) {
+func writeTransitions[E Event](buf *bytes.Buffer, current string, sortedEKeys []eKey[E], transitions map[eKey[E]]string) {
 	// make sure the current state is at top
 	for _, k := range sortedEKeys {
 		if k.src == current {

@@ -21,7 +21,7 @@ const (
 
 // VisualizeWithType outputs a visualization of a FSM in the desired format.
 // If the type is not given it defaults to GRAPHVIZ
-func VisualizeWithType[E FSMEvent](fsm *FSM[E], visualizeType VisualizeType) (string, error) {
+func VisualizeWithType[E Event](fsm *FSM[E], visualizeType VisualizeType) (string, error) {
 	switch visualizeType {
 	case GRAPHVIZ:
 		return Visualize(fsm), nil
@@ -36,9 +36,9 @@ func VisualizeWithType[E FSMEvent](fsm *FSM[E], visualizeType VisualizeType) (st
 	}
 }
 
-func getSortedTransitionKeys(transitions map[eKey]string) []eKey {
+func getSortedTransitionKeys[E Event](transitions map[eKey[E]]string) []eKey[E] {
 	// we sort the key alphabetically to have a reproducible graph output
-	sortedTransitionKeys := make([]eKey, 0)
+	sortedTransitionKeys := make([]eKey[E], 0)
 
 	for transition := range transitions {
 		sortedTransitionKeys = append(sortedTransitionKeys, transition)
@@ -53,7 +53,7 @@ func getSortedTransitionKeys(transitions map[eKey]string) []eKey {
 	return sortedTransitionKeys
 }
 
-func getSortedStates(transitions map[eKey]string) ([]string, map[string]string) {
+func getSortedStates[E Event](transitions map[eKey[E]]string) ([]string, map[string]string) {
 	statesToIDMap := make(map[string]string)
 	for transition, target := range transitions {
 		if _, ok := statesToIDMap[transition.src]; !ok {

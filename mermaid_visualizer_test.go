@@ -9,10 +9,10 @@ import (
 func TestMermaidOutput(t *testing.T) {
 	fsmUnderTest := NewFSM(
 		"closed",
-		Events{
-			{Name: "open", Src: []string{"closed"}, Dst: "open"},
-			{Name: "close", Src: []string{"open"}, Dst: "closed"},
-			{Name: "part-close", Src: []string{"intermediate"}, Dst: "closed"},
+		StateMachine[string]{
+			{Event: "open", Src: []string{"closed"}, Dst: "open"},
+			{Event: "close", Src: []string{"open"}, Dst: "closed"},
+			{Event: "part-close", Src: []string{"intermediate"}, Dst: "closed"},
 		},
 		Callbacks[string]{},
 	)
@@ -40,12 +40,12 @@ stateDiagram-v2
 func TestMermaidFlowChartOutput(t *testing.T) {
 	fsmUnderTest := NewFSM(
 		"closed",
-		Events{
-			{Name: "open", Src: []string{"closed"}, Dst: "open"},
-			{Name: "part-open", Src: []string{"closed"}, Dst: "intermediate"},
-			{Name: "part-open", Src: []string{"intermediate"}, Dst: "open"},
-			{Name: "close", Src: []string{"open"}, Dst: "closed"},
-			{Name: "part-close", Src: []string{"intermediate"}, Dst: "closed"},
+		StateMachine[string]{
+			{Event: "open", Src: []string{"closed"}, Dst: "open"},
+			{Event: "part-open", Src: []string{"closed"}, Dst: "intermediate"},
+			{Event: "part-open", Src: []string{"intermediate"}, Dst: "open"},
+			{Event: "close", Src: []string{"open"}, Dst: "closed"},
+			{Event: "part-close", Src: []string{"intermediate"}, Dst: "closed"},
 		},
 		Callbacks[string]{},
 	)

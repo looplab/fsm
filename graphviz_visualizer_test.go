@@ -9,10 +9,10 @@ import (
 func TestGraphvizOutput(t *testing.T) {
 	fsmUnderTest := NewFSM(
 		"closed",
-		Events{
-			{Name: "open", Src: []string{"closed"}, Dst: "open"},
-			{Name: "close", Src: []string{"open"}, Dst: "closed"},
-			{Name: "part-close", Src: []string{"intermediate"}, Dst: "closed"},
+		StateMachine[string]{
+			{Event: "open", Src: []string{"closed"}, Dst: "open"},
+			{Event: "close", Src: []string{"open"}, Dst: "closed"},
+			{Event: "part-close", Src: []string{"intermediate"}, Dst: "closed"},
 		},
 		Callbacks[string]{},
 	)

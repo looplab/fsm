@@ -30,19 +30,19 @@ import (
 )
 
 // transitioner is an interface for the FSM's transition function.
-type transitioner[E FSMEvent] interface {
+type transitioner[E Event] interface {
 	transition(*FSM[E]) error
 }
 
 // FSM is the state machine that holds the current state.
 //
 // It has to be created with NewFSM to function properly.
-type FSM[E FSMEvent] struct {
+type FSM[E Event] struct {
 	// current is the state that the FSM is currently in.
 	current string
 
 	// transitions maps events and source states to destination states.
-	transitions map[eKey]string
+	transitions map[eKey[E]]string
 
 	// callbacks maps events and targets to callback functions.
 	callbacks map[cKey]Callback[E]
@@ -64,14 +64,14 @@ type FSM[E FSMEvent] struct {
 	metadataMu sync.RWMutex
 }
 
-// EventDesc represents an event when initializing the FSM.
+// StateMachineEntry represents an event when initializing the FSM.
 //
 // The event can have one or more source states that is valid for performing
 // the transition. If the FSM is in one of the source states it will end up in
 // the specified destination state, calling all defined callbacks as it goes.
-type EventDesc struct {
-	// Name is the event name used when calling for a transition.
-	Name string
+type StateMachineEntry[E Event] struct {
+	// Event is the event name used when calling for a transition.
+	Event E
 
 	// Src is a slice of source states that the FSM must be in to perform a
 	// state transition.
@@ -84,13 +84,13 @@ type EventDesc struct {
 
 // Callback is a function type that callbacks should use. Event is the current
 // event info as the callback happens.
-type Callback[E FSMEvent] func(*Event[E])
+type Callback[E Event] func(*CallbackReference[E])
 
-// Events is a shorthand for defining the transition map in NewFSM.
-type Events []EventDesc
+// StateMachine is a shorthand for defining the transition map in NewFSM.
+type StateMachine[E Event] []StateMachineEntry[E]
 
 // Callbacks is a shorthand for defining the callbacks in NewFSM.
-type Callbacks[E FSMEvent] map[string]Callback[E]
+type Callbacks[E Event] map[string]Callback[E]
 
 // NewFSM constructs a FSM from events and callbacks.
 //
@@ -128,25 +128,25 @@ type Callbacks[E FSMEvent] map[string]Callback[E]
 // which version of the callback will end up in the internal map. This is due
 // to the pseudo random nature of Go maps. No checking for multiple keys is
 // currently performed.
-func NewFSM[E FSMEvent](initial string, events []EventDesc, callbacks map[string]Callback[E]) *FSM[E] {
+func NewFSM[E Event](initial string, events []StateMachineEntry[E], callbacks map[string]Callback[E]) *FSM[E] {
 	f := &FSM[E]{
 		transitionerObj: &transitionerStruct[E]{},
 		current:         initial,
-		transitions:     make(map[eKey]string),
+		transitions:     make(map[eKey[E]]string),
 		callbacks:       make(map[cKey]Callback[E]),
 		metadata:        make(map[string]interface{}),
 	}
 
 	// Build transition map and store sets of all events and states.
-	allEvents := make(map[string]bool)
+	allEvents := make(map[E]bool)
 	allStates := make(map[string]bool)
 	for _, e := range events {
 		for _, src := range e.Src {
-			f.transitions[eKey{e.Name, src}] = e.Dst
+			f.transitions[eKey[E]{e.Event, src}] = e.Dst
 			allStates[src] = true
 			allStates[e.Dst] = true
 		}
-		allEvents[e.Name] = true
+		allEvents[e.Event] = true
 	}
 
 	// Map all callbacks to events/states.
@@ -160,7 +160,7 @@ func NewFSM[E FSMEvent](initial string, events []EventDesc, callbacks map[string
 			if target == "event" {
 				target = ""
 				callbackType = callbackBeforeEvent
-			} else if _, ok := allEvents[target]; ok {
+			} else if _, ok := allEvents[E(target)]; ok { // FIXME
 				callbackType = callbackBeforeEvent
 			}
 		case strings.HasPrefix(name, "leave_"):
@@ -184,14 +184,14 @@ func NewFSM[E FSMEvent](initial string, events []EventDesc, callbacks map[string
 			if target == "event" {
 				target = ""
 				callbackType = callbackAfterEvent
-			} else if _, ok := allEvents[target]; ok {
+			} else if _, ok := allEvents[E(target)]; ok { // FIXME
 				callbackType = callbackAfterEvent
 			}
 		default:
 			target = name
 			if _, ok := allStates[target]; ok {
 				callbackType = callbackEnterState
-			} else if _, ok := allEvents[target]; ok {
+			} else if _, ok := allEvents[E(target)]; ok { // FIXME
 				callbackType = callbackAfterEvent
 			}
 		}
@@ -227,10 +227,10 @@ func (f *FSM[E]) SetState(state string) {
 }
 
 // Can returns true if event can occur in the current state.
-func (f *FSM[E]) Can(event string) bool {
+func (f *FSM[E]) Can(event E) bool {
 	f.stateMu.RLock()
 	defer f.stateMu.RUnlock()
-	_, ok := f.transitions[eKey{event, f.current}]
+	_, ok := f.transitions[eKey[E]{event, f.current}]
 	return ok && (f.transition == nil)
 }
 
@@ -242,7 +242,7 @@ func (f *FSM[E]) AvailableTransitions() []string {
 	var transitions []string
 	for key := range f.transitions {
 		if key.src == f.current {
-			transitions = append(transitions, key.event)
+			transitions = append(transitions, string(key.event))
 		}
 	}
 	return transitions
@@ -250,7 +250,7 @@ func (f *FSM[E]) AvailableTransitions() []string {
 
 // Cannot returns true if event can not occur in the current state.
 // It is a convenience method to help code read nicely.
-func (f *FSM[E]) Cannot(event string) bool {
+func (f *FSM[E]) Cannot(event E) bool {
 	return !f.Can(event)
 }
 
@@ -297,17 +297,17 @@ func (f *FSM[E]) Event(event E, args ...interface{}) error {
 		return InTransitionError{string(event)}
 	}
 
-	dst, ok := f.transitions[eKey{string(event), f.current}]
+	dst, ok := f.transitions[eKey[E]{event, f.current}]
 	if !ok {
 		for ekey := range f.transitions {
-			if ekey.event == string(event) {
+			if ekey.event == event {
 				return InvalidEventError{string(event), f.current}
 			}
 		}
 		return UnknownEventError{string(event)}
 	}
 
-	e := &Event[E]{f, string(event), f.current, dst, nil, args, false, false}
+	e := &CallbackReference[E]{f, string(event), f.current, dst, nil, args, false, false}
 
 	err := f.beforeEventCallbacks(e)
 	if err != nil {
@@ -361,7 +361,7 @@ func (f *FSM[E]) doTransition() error {
 
 // transitionerStruct is the default implementation of the transitioner
 // interface. Other implementations can be swapped in for testing.
-type transitionerStruct[E FSMEvent] struct{}
+type transitionerStruct[E Event] struct{}
 
 // Transition completes an asynchronous state change.
 //
@@ -378,7 +378,7 @@ func (t transitionerStruct[E]) transition(f *FSM[E]) error {
 
 // beforeEventCallbacks calls the before_ callbacks, first the named then the
 // general version.
-func (f *FSM[E]) beforeEventCallbacks(e *Event[E]) error {
+func (f *FSM[E]) beforeEventCallbacks(e *CallbackReference[E]) error {
 	if fn, ok := f.callbacks[cKey{e.Event, callbackBeforeEvent}]; ok {
 		fn(e)
 		if e.canceled {
@@ -396,7 +396,7 @@ func (f *FSM[E]) beforeEventCallbacks(e *Event[E]) error {
 
 // leaveStateCallbacks calls the leave_ callbacks, first the named then the
 // general version.
-func (f *FSM[E]) leaveStateCallbacks(e *Event[E]) error {
+func (f *FSM[E]) leaveStateCallbacks(e *CallbackReference[E]) error {
 	if fn, ok := f.callbacks[cKey{f.current, callbackLeaveState}]; ok {
 		fn(e)
 		if e.canceled {
@@ -418,7 +418,7 @@ func (f *FSM[E]) leaveStateCallbacks(e *Event[E]) error {
 
 // enterStateCallbacks calls the enter_ callbacks, first the named then the
 // general version.
-func (f *FSM[E]) enterStateCallbacks(e *Event[E]) {
+func (f *FSM[E]) enterStateCallbacks(e *CallbackReference[E]) {
 	if fn, ok := f.callbacks[cKey{f.current, callbackEnterState}]; ok {
 		fn(e)
 	}
@@ -429,7 +429,7 @@ func (f *FSM[E]) enterStateCallbacks(e *Event[E]) {
 
 // afterEventCallbacks calls the after_ callbacks, first the named then the
 // general version.
-func (f *FSM[E]) afterEventCallbacks(e *Event[E]) {
+func (f *FSM[E]) afterEventCallbacks(e *CallbackReference[E]) {
 	if fn, ok := f.callbacks[cKey{e.Event, callbackAfterEvent}]; ok {
 		fn(e)
 	}
@@ -458,9 +458,9 @@ type cKey struct {
 }
 
 // eKey is a struct key used for storing the transition map.
-type eKey struct {
+type eKey[E Event] struct {
 	// event is the name of the event that the keys refers to.
-	event string
+	event E
 
 	// src is the source from where the event can transition.
 	src string

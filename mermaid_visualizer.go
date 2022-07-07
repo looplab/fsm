@@ -18,7 +18,7 @@ const (
 )
 
 // VisualizeForMermaidWithGraphType outputs a visualization of a FSM in Mermaid format as specified by the graphType.
-func VisualizeForMermaidWithGraphType[E FSMEvent](fsm *FSM[E], graphType MermaidDiagramType) (string, error) {
+func VisualizeForMermaidWithGraphType[E Event](fsm *FSM[E], graphType MermaidDiagramType) (string, error) {
 	switch graphType {
 	case FlowChart:
 		return visualizeForMermaidAsFlowChart(fsm), nil
@@ -29,7 +29,7 @@ func VisualizeForMermaidWithGraphType[E FSMEvent](fsm *FSM[E], graphType Mermaid
 	}
 }
 
-func visualizeForMermaidAsStateDiagram[E FSMEvent](fsm *FSM[E]) string {
+func visualizeForMermaidAsStateDiagram[E Event](fsm *FSM[E]) string {
 	var buf bytes.Buffer
 
 	sortedTransitionKeys := getSortedTransitionKeys(fsm.transitions)
@@ -47,7 +47,7 @@ func visualizeForMermaidAsStateDiagram[E FSMEvent](fsm *FSM[E]) string {
 }
 
 // visualizeForMermaidAsFlowChart outputs a visualization of a FSM in Mermaid format (including highlighting of current state).
-func visualizeForMermaidAsFlowChart[E FSMEvent](fsm *FSM[E]) string {
+func visualizeForMermaidAsFlowChart[E Event](fsm *FSM[E]) string {
 	var buf bytes.Buffer
 
 	sortedTransitionKeys := getSortedTransitionKeys(fsm.transitions)
@@ -74,7 +74,7 @@ func writeFlowChartStates(buf *bytes.Buffer, sortedStates []string, statesToIDMa
 	buf.WriteString("\n")
 }
 
-func writeFlowChartTransitions(buf *bytes.Buffer, transitions map[eKey]string, sortedTransitionKeys []eKey, statesToIDMap map[string]string) {
+func writeFlowChartTransitions[E Event](buf *bytes.Buffer, transitions map[eKey[E]]string, sortedTransitionKeys []eKey[E], statesToIDMap map[string]string) {
 	for _, transition := range sortedTransitionKeys {
 		target := transitions[transition]
 		buf.WriteString(fmt.Sprintf(`    %s --> |%s| %s`, statesToIDMap[transition.src], transition.event, statesToIDMap[target]))
