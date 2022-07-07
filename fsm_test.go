@@ -708,7 +708,7 @@ func TestNoTransition(t *testing.T) {
 	}
 }
 
-func ExampleNewFSM() {
+func ExampleNew() {
 	fsm := New(
 		"green",
 		Transitions[string, string]{
