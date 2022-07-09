@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 
+	"golang.org/x/exp/constraints"
 	"golang.org/x/exp/slices"
 )
 
@@ -23,7 +24,7 @@ const (
 
 // VisualizeWithType outputs a visualization of a FSM in the desired format.
 // If the type is not given it defaults to GRAPHVIZ
-func VisualizeWithType[E Event, S State](fsm *FSM[E, S], visualizeType VisualizeType) (string, error) {
+func VisualizeWithType[E constraints.Ordered, S constraints.Ordered](fsm *FSM[E, S], visualizeType VisualizeType) (string, error) {
 	switch visualizeType {
 	case GRAPHVIZ:
 		return Visualize(fsm), nil
@@ -38,7 +39,7 @@ func VisualizeWithType[E Event, S State](fsm *FSM[E, S], visualizeType Visualize
 	}
 }
 
-func getSortedTransitionKeys[E Event, S State](transitions map[eKey[E, S]]S) []eKey[E, S] {
+func getSortedTransitionKeys[E constraints.Ordered, S constraints.Ordered](transitions map[eKey[E, S]]S) []eKey[E, S] {
 	// we sort the key alphabetically to have a reproducible graph output
 	sortedTransitionKeys := make([]eKey[E, S], 0)
 
@@ -55,7 +56,7 @@ func getSortedTransitionKeys[E Event, S State](transitions map[eKey[E, S]]S) []e
 	return sortedTransitionKeys
 }
 
-func getSortedStates[E Event, S State](transitions map[eKey[E, S]]S) ([]S, map[S]string) {
+func getSortedStates[E constraints.Ordered, S constraints.Ordered](transitions map[eKey[E, S]]S) ([]S, map[S]string) {
 	statesToIDMap := make(map[S]string)
 	for transition, target := range transitions {
 		if _, ok := statesToIDMap[transition.src]; !ok {

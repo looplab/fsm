@@ -25,18 +25,22 @@
 package fsm
 
 import (
+	"fmt"
 	"sync"
+
+	"golang.org/x/exp/constraints"
 )
 
 // transitioner is an interface for the FSM's transition function.
-type transitioner[E Event, S State] interface {
+type transitioner[E constraints.Ordered, S constraints.Ordered] interface {
 	transition(*FSM[E, S]) error
 }
 
 // FSM is the state machine that holds the current state.
-//
-// It has to be created with NewFSM to function properly.
-type FSM[E Event, S State] struct {
+// E ist the event
+// S is the state
+// It has to be created with New to function properly.
+type FSM[E constraints.Ordered, S constraints.Ordered] struct {
 	// current is the state that the FSM is currently in.
 	current S
 
@@ -68,7 +72,7 @@ type FSM[E Event, S State] struct {
 // The event can have one or more source states that is valid for performing
 // the transition. If the FSM is in one of the source states it will end up in
 // the specified destination state, calling all defined callbacks as it goes.
-type Transition[E Event, S State] struct {
+type Transition[E constraints.Ordered, S constraints.Ordered] struct {
 	// Event is the event used when calling for a transition.
 	Event E
 
@@ -81,15 +85,8 @@ type Transition[E Event, S State] struct {
 	Dst S
 }
 
-// Callback is a function type that callbacks should use. Event is the current
-// event info as the callback happens.
-// type Callback[E Event, S State] func(*CallbackContext[E, S])
-
 // Transitions is a shorthand for defining the transition map in NewFSM.
-type Transitions[E Event, S State] []Transition[E, S]
-
-// Callbacks is a shorthand for defining the callbacks in NewFSM.
-type Callbacks[E Event, S State] []Callback[E, S]
+type Transitions[E constraints.Ordered, S constraints.Ordered] []Transition[E, S]
 
 // CallbackType defines at which type of Event this callback should be called.
 type CallbackType int
@@ -113,7 +110,7 @@ const (
 	LeaveAllStates
 )
 
-type Callback[E Event, S State] struct {
+type Callback[E constraints.Ordered, S constraints.Ordered] struct {
 	// When should the callback be called.
 	When CallbackType
 	// Event is the event that the callback should be called for. Only relevant for BeforeEvent and AfterEvent.
@@ -124,14 +121,17 @@ type Callback[E Event, S State] struct {
 	F func(*CallbackContext[E, S])
 }
 
-// New constructs a FSM from events and callbacks.
+// Callbacks is a shorthand for defining the callbacks in NewFSM.
+type Callbacks[E constraints.Ordered, S constraints.Ordered] []Callback[E, S]
+
+// New constructs a generic FSM with a initial state S, for events E.
+// E is the event type, S is the state type.
 //
-// The events and transitions are specified as a slice of Event structs
-// specified as Events. Each Event is mapped to one or more internal
-// transitions from Event.Src to Event.Dst.
+// Transistions define the state transistions that can be performed for a given event
+// and a slice of source states, the destination state and the callback function.
 //
 // Callbacks are added as a slice specified as Callbacks and called in the same order.
-func New[E Event, S State](initial S, transitions Transitions[E, S], callbacks Callbacks[E, S]) *FSM[E, S] {
+func New[E constraints.Ordered, S constraints.Ordered](initial S, transitions Transitions[E, S], callbacks Callbacks[E, S]) *FSM[E, S] {
 	f := &FSM[E, S]{
 		current:      initial,
 		transitioner: &defaultTransitioner[E, S]{},
@@ -241,17 +241,17 @@ func (f *FSM[E, S]) Event(event E, args ...any) error {
 	defer f.stateMu.RUnlock()
 
 	if f.transition != nil {
-		return InTransitionError{string(event)}
+		return InTransitionError{fmt.Sprintf("%v", event)}
 	}
 
 	dst, ok := f.transitions[eKey[E, S]{event, f.current}]
 	if !ok {
 		for ekey := range f.transitions {
 			if ekey.event == event {
-				return InvalidEventError{string(event), string(f.current)}
+				return InvalidEventError{fmt.Sprintf("%v", event), fmt.Sprintf("%v", f.current)}
 			}
 		}
-		return UnknownEventError{string(event)}
+		return UnknownEventError{fmt.Sprintf("%v", event)}
 	}
 
 	e := &CallbackContext[E, S]{f, event, f.current, dst, nil, args, false, false}
@@ -308,7 +308,7 @@ func (f *FSM[E, S]) doTransition() error {
 
 // defaultTransitioner is the default implementation of the transitioner
 // interface. Other implementations can be swapped in for testing.
-type defaultTransitioner[E Event, S State] struct{}
+type defaultTransitioner[E constraints.Ordered, S constraints.Ordered] struct{}
 
 // Transition completes an asynchronous state change.
 //
@@ -402,7 +402,7 @@ func (f *FSM[E, S]) afterEventCallbacks(e *CallbackContext[E, S]) {
 }
 
 // eKey is a struct key used for storing the transition map.
-type eKey[E Event, S State] struct {
+type eKey[E constraints.Ordered, S constraints.Ordered] struct {
 	// event is the name of the event that the keys refers to.
 	event E
 

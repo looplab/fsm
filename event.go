@@ -14,18 +14,10 @@
 
 package fsm
 
-type Event interface {
-	~string
-}
-type State interface {
-	~string
-}
-type EventOrState interface {
-	Event | State
-}
+import "golang.org/x/exp/constraints"
 
 // CallbackContext is the info that get passed as a reference in the callbacks.
-type CallbackContext[E Event, S State] struct {
+type CallbackContext[E constraints.Ordered, S constraints.Ordered] struct {
 	// FSM is an reference to the current FSM.
 	FSM *FSM[E, S]
 

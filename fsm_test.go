@@ -20,9 +20,11 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"golang.org/x/exp/constraints"
 )
 
-type fakeTransitioner[E Event, S State] struct {
+type fakeTransitioner[E constraints.Ordered, S constraints.Ordered] struct {
 }
 
 func (t fakeTransitioner[E, S]) transition(f *FSM[E, S]) error {
