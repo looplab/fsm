@@ -26,7 +26,9 @@ func NewDoor(to string) *Door {
 			{Event: "close", Src: []string{"open"}, Dst: "closed"},
 		},
 		fsm.Callbacks[string, string]{
-			"enter_state": func(e *fsm.CallbackContext[string, string]) { d.enterState(e) },
+			fsm.Callback[string, string]{When: fsm.EnterAllStates,
+				F: func(e *fsm.CallbackContext[string, string]) { d.enterState(e) },
+			},
 		},
 	)
 

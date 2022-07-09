@@ -1,6 +1,3 @@
-//go:build ignore
-// +build ignore
-
 package main
 
 import (
@@ -10,7 +7,6 @@ import (
 )
 
 func main() {
-
 	f := fsm.New(
 		"idle",
 		fsm.Transistions[string, string]{
@@ -21,17 +17,25 @@ func main() {
 			{Event: "finish", Src: []string{"scanning"}, Dst: "idle"},
 		},
 		fsm.Callbacks[string, string]{
-			"scan": func(e *fsm.CallbackContext[string, string]) {
-				fmt.Println("after_scan: " + e.FSM.Current())
+			fsm.Callback[string, string]{When: fsm.BeforeEvent, Event: "scan",
+				F: func(e *fsm.CallbackContext[string, string]) {
+					fmt.Println("after_scan: " + e.FSM.Current())
+				},
 			},
-			"working": func(e *fsm.CallbackContext[string, string]) {
-				fmt.Println("working: " + e.FSM.Current())
+			fsm.Callback[string, string]{When: fsm.BeforeEvent, Event: "working",
+				F: func(e *fsm.CallbackContext[string, string]) {
+					fmt.Println("working: " + e.FSM.Current())
+				},
 			},
-			"situation": func(e *fsm.CallbackContext[string, string]) {
-				fmt.Println("situation: " + e.FSM.Current())
+			fsm.Callback[string, string]{When: fsm.BeforeEvent, Event: "situation",
+				F: func(e *fsm.CallbackContext[string, string]) {
+					fmt.Println("situation: " + e.FSM.Current())
+				},
 			},
-			"finish": func(e *fsm.CallbackContext[string, string]) {
-				fmt.Println("finish: " + e.FSM.Current())
+			fsm.Callback[string, string]{When: fsm.BeforeEvent, Event: "finish",
+				F: func(e *fsm.CallbackContext[string, string]) {
+					fmt.Println("finish: " + e.FSM.Current())
+				},
 			},
 		},
 	)

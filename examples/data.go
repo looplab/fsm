@@ -1,6 +1,3 @@
-//go:build ignore
-// +build ignore
-
 package main
 
 import (
@@ -17,16 +14,19 @@ func main() {
 			{Event: "consume", Src: []string{"idle"}, Dst: "idle"},
 		},
 		fsm.Callbacks[string, string]{
-			"produce": func(e *fsm.CallbackContext[string, string]) {
-				e.FSM.SetMetadata("message", "hii")
-				fmt.Println("produced data")
+			fsm.Callback[string, string]{When: fsm.BeforeEvent, Event: "sproduce",
+				F: func(e *fsm.CallbackContext[string, string]) {
+					e.FSM.SetMetadata("message", "hii")
+					fmt.Println("produced data")
+				},
 			},
-			"consume": func(e *fsm.CallbackContext[string, string]) {
-				message, ok := e.FSM.Metadata("message")
-				if ok {
-					fmt.Println("message = " + message.(string))
-				}
-
+			fsm.Callback[string, string]{When: fsm.BeforeEvent, Event: "consume",
+				F: func(e *fsm.CallbackContext[string, string]) {
+					message, ok := e.FSM.Metadata("message")
+					if ok {
+						fmt.Println("message = " + message.(string))
+					}
+				},
 			},
 		},
 	)
