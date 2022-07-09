@@ -982,7 +982,7 @@ const (
 	IsOpen   MyState = "open"
 )
 
-func ExampleFSM_Event_Generic() {
+func ExampleFSM_Event_generic() {
 	fsm := New(
 		IsClosed,
 		Transitions[MyEvent, MyState]{
@@ -1033,7 +1033,7 @@ func BenchmarkGenericFSM(b *testing.B) {
 		},
 	)
 	for i := 0; i < b.N; i++ {
-		fsm.Event(Open)
+		_ = fsm.Event(Open)
 	}
 }
 func BenchmarkFSM(b *testing.B) {
@@ -1053,6 +1053,6 @@ func BenchmarkFSM(b *testing.B) {
 		},
 	)
 	for i := 0; i < b.N; i++ {
-		fsm.Event("open")
+		_ = fsm.Event("open")
 	}
 }
