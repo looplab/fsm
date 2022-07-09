@@ -25,7 +25,6 @@
 package fsm
 
 import (
-	"strings"
 	"sync"
 )
 
@@ -45,7 +44,7 @@ type FSM[E Event, S State] struct {
 	transitions map[eKey[E, S]]S
 
 	// callbacks maps events and targets to callback functions.
-	callbacks map[cKey[E]]Callback[E, S]
+	callbacks Callbacks[E, S]
 
 	// transition is the internal transition functions used either directly
 	// or when Transition is called in an asynchronous state transition.
@@ -84,13 +83,46 @@ type Transition[E Event, S State] struct {
 
 // Callback is a function type that callbacks should use. Event is the current
 // event info as the callback happens.
-type Callback[E Event, S State] func(*CallbackContext[E, S])
+// type Callback[E Event, S State] func(*CallbackContext[E, S])
 
 // Transitions is a shorthand for defining the transition map in NewFSM.
 type Transitions[E Event, S State] []Transition[E, S]
 
 // Callbacks is a shorthand for defining the callbacks in NewFSM.
-type Callbacks[E Event, S State] map[E]Callback[E, S]
+type Callbacks[E Event, S State] []Callback[E, S]
+
+// CallbackType defines at which type of Event this callback should be called.
+type CallbackType int
+
+const (
+	// BeforeEvent called before event E
+	BeforeEvent CallbackType = iota
+	// BeforeAllEvents called before all events
+	BeforeAllEvents
+	// AfterEvent called after event E
+	AfterEvent
+	// AfterAllEvents called after all events
+	AfterAllEvents
+	// EnterState called after entering state S
+	EnterState
+	// EnterAllStates called after entering all states
+	EnterAllStates
+	// LeaveState is called before leaving state S.
+	LeaveState
+	// LeaveAllStates is called before leaving all states.
+	LeaveAllStates
+)
+
+type Callback[E Event, S State] struct {
+	// When should the callback be called.
+	When CallbackType
+	// Event is the event that the callback should be called for. Only relevant for BeforeEvent and AfterEvent.
+	Event E
+	// State is the state that the callback should be called for. Only relevant for EnterState and LeaveState.
+	State S
+	// F is the callback function.
+	F func(*CallbackContext[E, S])
+}
 
 // New constructs a FSM from events and callbacks.
 //
@@ -98,107 +130,21 @@ type Callbacks[E Event, S State] map[E]Callback[E, S]
 // specified as Events. Each Event is mapped to one or more internal
 // transitions from Event.Src to Event.Dst.
 //
-// Callbacks are added as a map specified as Callbacks where the key is parsed
-// as the callback event as follows, and called in the same order:
-//
-// 1. before_<EVENT> - called before event named <EVENT>
-//
-// 2. before_event - called before all events
-//
-// 3. leave_<OLD_STATE> - called before leaving <OLD_STATE>
-//
-// 4. leave_state - called before leaving all states
-//
-// 5. enter_<NEW_STATE> - called after entering <NEW_STATE>
-//
-// 6. enter_state - called after entering all states
-//
-// 7. after_<EVENT> - called after event named <EVENT>
-//
-// 8. after_event - called after all events
-//
-// There are also two short form versions for the most commonly used callbacks.
-// They are simply the name of the event or state:
-//
-// 1. <NEW_STATE> - called after entering <NEW_STATE>
-//
-// 2. <EVENT> - called after event named <EVENT>
-//
-// If both a shorthand version and a full version is specified it is undefined
-// which version of the callback will end up in the internal map. This is due
-// to the pseudo random nature of Go maps. No checking for multiple keys is
-// currently performed.
-func New[E Event, S State](initial S, transitions []Transition[E, S], callbacks map[E]Callback[E, S]) *FSM[E, S] {
+// Callbacks are added as a slice specified as Callbacks and called in the same order.
+func New[E Event, S State](initial S, transitions Transitions[E, S], callbacks Callbacks[E, S]) *FSM[E, S] {
 	f := &FSM[E, S]{
-		transitioner: &defaultTransitioner[E, S]{},
 		current:      initial,
-		transitions:  make(map[eKey[E, S]]S),
-		callbacks:    make(map[cKey[E]]Callback[E, S]),
-		metadata:     make(map[string]any),
+		transitioner: &defaultTransitioner[E, S]{},
+		transitions:  map[eKey[E, S]]S{},
+		callbacks:    callbacks,
+		metadata:     map[string]any{},
 	}
 
 	// Build transition map and store sets of all events and states.
-	allEvents := make(map[E]bool)
-	allStates := make(map[S]bool)
 	for _, e := range transitions {
 		for _, src := range e.Src {
+			// FIXME eKey still required?
 			f.transitions[eKey[E, S]{e.Event, src}] = e.Dst
-			allStates[src] = true
-			allStates[e.Dst] = true
-		}
-		allEvents[e.Event] = true
-	}
-
-	// Map all callbacks to events/states.
-	for event, fn := range callbacks {
-		var target string
-		var callbackType int
-
-		eventName := string(event) // FIXME
-		switch {
-		case strings.HasPrefix(eventName, "before_"):
-			target = strings.TrimPrefix(eventName, "before_")
-			if target == "event" {
-				target = ""
-				callbackType = callbackBeforeEvent
-			} else if _, ok := allEvents[E(target)]; ok { // FIXME
-				callbackType = callbackBeforeEvent
-			}
-		case strings.HasPrefix(eventName, "leave_"):
-			target = strings.TrimPrefix(eventName, "leave_")
-			if target == "state" {
-				target = ""
-				callbackType = callbackLeaveState
-			} else if _, ok := allStates[S(target)]; ok {
-				callbackType = callbackLeaveState
-			}
-		case strings.HasPrefix(eventName, "enter_"):
-			target = strings.TrimPrefix(eventName, "enter_")
-			if target == "state" {
-				target = ""
-				callbackType = callbackEnterState
-			} else if _, ok := allStates[S(target)]; ok {
-				callbackType = callbackEnterState
-			}
-		case strings.HasPrefix(eventName, "after_"):
-			target = strings.TrimPrefix(eventName, "after_")
-			if target == "event" {
-				target = ""
-				callbackType = callbackAfterEvent
-			} else if _, ok := allEvents[E(target)]; ok { // FIXME
-				callbackType = callbackAfterEvent
-			}
-		default:
-			target = eventName
-			if _, ok := allStates[S(target)]; ok {
-				callbackType = callbackEnterState
-			} else if _, ok := allEvents[E(target)]; ok { // FIXME
-				callbackType = callbackAfterEvent
-			}
-		}
-
-		if callbackType != callbackNone {
-			f.callbacks[cKey[E]{E(target), callbackType}] = fn // FIXME
 		}
 	}
 
@@ -380,16 +326,20 @@ func (t defaultTransitioner[E, S]) transition(f *FSM[E, S]) error {
 // beforeEventCallbacks calls the before_ callbacks, first the named then the
 // general version.
 func (f *FSM[E, S]) beforeEventCallbacks(e *CallbackContext[E, S]) error {
-	if fn, ok := f.callbacks[cKey[E]{e.Event, callbackBeforeEvent}]; ok {
-		fn(e)
-		if e.canceled {
-			return CanceledError{e.Err}
+	for _, cb := range f.callbacks {
+		if cb.When == BeforeEvent {
+			if cb.Event == e.Event {
+				cb.F(e)
+				if e.canceled {
+					return CanceledError{e.Err}
+				}
+			}
 		}
-	}
-	if fn, ok := f.callbacks[cKey[E]{"", callbackBeforeEvent}]; ok {
-		fn(e)
-		if e.canceled {
-			return CanceledError{e.Err}
+		if cb.When == BeforeAllEvents {
+			cb.F(e)
+			if e.canceled {
+				return CanceledError{e.Err}
+			}
 		}
 	}
 	return nil
@@ -398,20 +348,24 @@ func (f *FSM[E, S]) beforeEventCallbacks(e *CallbackContext[E, S]) error {
 // leaveStateCallbacks calls the leave_ callbacks, first the named then the
 // general version.
 func (f *FSM[E, S]) leaveStateCallbacks(e *CallbackContext[E, S]) error {
-	if fn, ok := f.callbacks[cKey[E]{E(f.current), callbackLeaveState}]; ok { // FIXME
-		fn(e)
-		if e.canceled {
-			return CanceledError{e.Err}
-		} else if e.async {
-			return AsyncError{e.Err}
+	for _, cb := range f.callbacks {
+		if cb.When == LeaveState {
+			if cb.State == e.Src {
+				cb.F(e)
+				if e.canceled {
+					return CanceledError{e.Err}
+				} else if e.async {
+					return AsyncError{e.Err}
+				}
+			}
 		}
-	}
-	if fn, ok := f.callbacks[cKey[E]{"", callbackLeaveState}]; ok {
-		fn(e)
-		if e.canceled {
-			return CanceledError{e.Err}
-		} else if e.async {
-			return AsyncError{e.Err}
+		if cb.When == LeaveAllStates {
+			cb.F(e)
+			if e.canceled {
+				return CanceledError{e.Err}
+			} else if e.async {
+				return AsyncError{e.Err}
+			}
 		}
 	}
 	return nil
@@ -420,42 +374,31 @@ func (f *FSM[E, S]) leaveStateCallbacks(e *CallbackContext[E, S]) error {
 // enterStateCallbacks calls the enter_ callbacks, first the named then the
 // general version.
 func (f *FSM[E, S]) enterStateCallbacks(e *CallbackContext[E, S]) {
-	if fn, ok := f.callbacks[cKey[E]{E(f.current), callbackEnterState}]; ok { // FIXME
-		fn(e)
-	}
-	if fn, ok := f.callbacks[cKey[E]{"", callbackEnterState}]; ok {
-		fn(e)
+	for _, cb := range f.callbacks {
+		if cb.When == EnterState {
+			if cb.State == e.Dst {
+				cb.F(e)
+			}
+		}
+		if cb.When == EnterAllStates {
+			cb.F(e)
+		}
 	}
 }
 
 // afterEventCallbacks calls the after_ callbacks, first the named then the
 // general version.
 func (f *FSM[E, S]) afterEventCallbacks(e *CallbackContext[E, S]) {
-	if fn, ok := f.callbacks[cKey[E]{e.Event, callbackAfterEvent}]; ok {
-		fn(e)
+	for _, cb := range f.callbacks {
+		if cb.When == AfterEvent {
+			if cb.Event == e.Event {
+				cb.F(e)
+			}
+		}
+		if cb.When == AfterAllEvents {
+			cb.F(e)
+		}
 	}
-	if fn, ok := f.callbacks[cKey[E]{"", callbackAfterEvent}]; ok {
-		fn(e)
-	}
-}
-
-const (
-	callbackNone int = iota
-	callbackBeforeEvent
-	callbackLeaveState
-	callbackEnterState
-	callbackAfterEvent
-)
-
-// cKey is a struct key used for keeping the callbacks mapped to a target.
-type cKey[ES EventOrState] struct { // FIXME Type
-	// target is either the name of a state or an event depending on which
-	// callback type the key refers to. It can also be "" for a non-targeted
-	// callback like before_event.
-	target ES
-
-	// callbackType is the situation when the callback will be run.
-	callbackType int
 }
 
 // eKey is a struct key used for storing the transition map.

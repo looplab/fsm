@@ -11,7 +11,7 @@ import (
 
 func main() {
 
-	fsm := fsm.New(
+	f := fsm.New(
 		"idle",
 		fsm.Transistions[string, string]{
 			{Event: "scan", Src: []string{"idle"}, Dst: "scanning"},
@@ -36,34 +36,34 @@ func main() {
 		},
 	)
 
-	fmt.Println(fsm.Current())
+	fmt.Println(f.Current())
 
-	err := fsm.Event("scan")
+	err := f.Event("scan")
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	fmt.Println("1:" + fsm.Current())
+	fmt.Println("1:" + f.Current())
 
-	err = fsm.Event("working")
+	err = f.Event("working")
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	fmt.Println("2:" + fsm.Current())
+	fmt.Println("2:" + f.Current())
 
-	err = fsm.Event("situation")
+	err = f.Event("situation")
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	fmt.Println("3:" + fsm.Current())
+	fmt.Println("3:" + f.Current())
 
-	err = fsm.Event("finish")
+	err = f.Event("finish")
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	fmt.Println("4:" + fsm.Current())
+	fmt.Println("4:" + f.Current())
 
 }
