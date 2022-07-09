@@ -28,13 +28,13 @@ import (
 )
 
 func main() {
-    fsm := fsm.New(
+    fsm := fsm.New[string, string](
         "closed",
-        fsm.Events{
+        fsm.Events[string, string]{
             {Name: "open", Src: []string{"closed"}, Dst: "open"},
             {Name: "close", Src: []string{"open"}, Dst: "closed"},
         },
-        fsm.Callbacks{},
+        fsm.Callbacks[string, string]{},
     )
 
     fmt.Println(fsm.Current())
@@ -77,14 +77,19 @@ func NewDoor(to string) *Door {
         To: to,
     }
 
-    d.FSM = fsm.New(
+    d.FSM = fsm.New[string, string](
         "closed",
-        fsm.Events{
+        fsm.Events[string, string]{
             {Name: "open", Src: []string{"closed"}, Dst: "open"},
             {Name: "close", Src: []string{"open"}, Dst: "closed"},
         },
-        fsm.Callbacks{
-            "enter_state": func(e *fsm.Event) { d.enterState(e) },
+        fsm.Callbacks[string, string]{
+            fsm.Callback[string, string]{
+                When: fsm.AfterAllStates,
+                F: func(cr *fsm.CallbackContext[MyEvent, MyState]) {
+                    d.enterState(e)
+                },
+            },
         },
     )
 
