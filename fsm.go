@@ -60,10 +60,11 @@ type FSM[E constraints.Ordered, S constraints.Ordered] struct {
 	stateMu sync.RWMutex
 	// eventMu guards access to Event() and Transition().
 	eventMu sync.Mutex
+
 	// metadata can be used to store and load data that maybe used across events
 	// use methods SetMetadata() and Metadata() to store and load data
 	metadata map[string]any
-
+	// metadataMu guards access to the metadata.
 	metadataMu sync.RWMutex
 }
 
@@ -88,42 +89,6 @@ type Transition[E constraints.Ordered, S constraints.Ordered] struct {
 // Transitions is a shorthand for defining the transition map in NewFSM.
 type Transitions[E constraints.Ordered, S constraints.Ordered] []Transition[E, S]
 
-// CallbackType defines at which type of Event this callback should be called.
-type CallbackType int
-
-const (
-	// BeforeEvent called before event E
-	BeforeEvent CallbackType = iota
-	// BeforeAllEvents called before all events
-	BeforeAllEvents
-	// AfterEvent called after event E
-	AfterEvent
-	// AfterAllEvents called after all events
-	AfterAllEvents
-	// EnterState called after entering state S
-	EnterState
-	// EnterAllStates called after entering all states
-	EnterAllStates
-	// LeaveState is called before leaving state S.
-	LeaveState
-	// LeaveAllStates is called before leaving all states.
-	LeaveAllStates
-)
-
-type Callback[E constraints.Ordered, S constraints.Ordered] struct {
-	// When should the callback be called.
-	When CallbackType
-	// Event is the event that the callback should be called for. Only relevant for BeforeEvent and AfterEvent.
-	Event E
-	// State is the state that the callback should be called for. Only relevant for EnterState and LeaveState.
-	State S
-	// F is the callback function.
-	F func(*CallbackContext[E, S])
-}
-
-// Callbacks is a shorthand for defining the callbacks in NewFSM.
-type Callbacks[E constraints.Ordered, S constraints.Ordered] []Callback[E, S]
-
 // New constructs a generic FSM with a initial state S, for events E.
 // E is the event type, S is the state type.
 //
@@ -147,7 +112,6 @@ func New[E constraints.Ordered, S constraints.Ordered](initial S, transitions Tr
 			f.transitions[eKey[E, S]{e.Event, src}] = e.Dst
 		}
 	}
-
 	return f
 }
 
@@ -181,6 +145,12 @@ func (f *FSM[E, S]) Can(event E) bool {
 	return ok && (f.transition == nil)
 }
 
+// Cannot returns true if event can not occur in the current state.
+// It is a convenience method to help code read nicely.
+func (f *FSM[E, S]) Cannot(event E) bool {
+	return !f.Can(event)
+}
+
 // AvailableTransitions returns a list of transitions available in the
 // current state.
 func (f *FSM[E, S]) AvailableTransitions() []E {
@@ -193,12 +163,6 @@ func (f *FSM[E, S]) AvailableTransitions() []E {
 		}
 	}
 	return transitions
-}
-
-// Cannot returns true if event can not occur in the current state.
-// It is a convenience method to help code read nicely.
-func (f *FSM[E, S]) Cannot(event E) bool {
-	return !f.Can(event)
 }
 
 // Metadata returns the value stored in metadata

@@ -14,7 +14,45 @@
 
 package fsm
 
-import "golang.org/x/exp/constraints"
+import (
+	"golang.org/x/exp/constraints"
+)
+
+// CallbackType defines at which type of Event this callback should be called.
+type CallbackType int
+
+const (
+	// BeforeEvent called before event E
+	BeforeEvent CallbackType = iota
+	// BeforeAllEvents called before all events
+	BeforeAllEvents
+	// AfterEvent called after event E
+	AfterEvent
+	// AfterAllEvents called after all events
+	AfterAllEvents
+	// EnterState called after entering state S
+	EnterState
+	// EnterAllStates called after entering all states
+	EnterAllStates
+	// LeaveState is called before leaving state S.
+	LeaveState
+	// LeaveAllStates is called before leaving all states.
+	LeaveAllStates
+)
+
+type Callback[E constraints.Ordered, S constraints.Ordered] struct {
+	// When should the callback be called.
+	When CallbackType
+	// Event is the event that the callback should be called for. Only relevant for BeforeEvent and AfterEvent.
+	Event E
+	// State is the state that the callback should be called for. Only relevant for EnterState and LeaveState.
+	State S
+	// F is the callback function.
+	F func(*CallbackContext[E, S])
+}
+
+// Callbacks is a shorthand for defining the callbacks in NewFSM.
+type Callbacks[E constraints.Ordered, S constraints.Ordered] []Callback[E, S]
 
 // CallbackContext is the info that get passed as a reference in the callbacks.
 type CallbackContext[E constraints.Ordered, S constraints.Ordered] struct {
@@ -46,11 +84,11 @@ type CallbackContext[E constraints.Ordered, S constraints.Ordered] struct {
 // Cancel can be called in before_<EVENT> or leave_<STATE> to cancel the
 // current transition before it happens. It takes an optional error, which will
 // overwrite e.Err if set before.
-func (e *CallbackContext[E, S]) Cancel(err ...error) {
-	e.canceled = true
+func (ctx *CallbackContext[E, S]) Cancel(err ...error) {
+	ctx.canceled = true
 
 	if len(err) > 0 {
-		e.Err = err[0]
+		ctx.Err = err[0]
 	}
 }
 
@@ -59,6 +97,6 @@ func (e *CallbackContext[E, S]) Cancel(err ...error) {
 // The current state transition will be on hold in the old state until a final
 // call to Transition is made. This will complete the transition and possibly
 // call the other callbacks.
-func (e *CallbackContext[E, S]) Async() {
-	e.async = true
+func (ctx *CallbackContext[E, S]) Async() {
+	ctx.async = true
 }
