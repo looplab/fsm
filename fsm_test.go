@@ -1086,11 +1086,11 @@ func BenchmarkFSM(b *testing.B) {
 
 func BenchmarkGenericFSMManyEvents(b *testing.B) {
 	transitions := Transitions[int, int]{}
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 100; i++ {
 		transitions = append(transitions, Transition[int, int]{Event: i, Src: []int{i}, Dst: i + 1})
 	}
 	callbacks := Callbacks[int, int]{}
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 100; i++ {
 		callbacks = append(callbacks, Callback[int, int]{
 			When:  BeforeEvent,
 			Event: i,
