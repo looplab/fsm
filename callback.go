@@ -40,6 +40,10 @@ const (
 	LeaveAllStates
 )
 
+// Callback defines a condition when the callback function F should be called in certain conditions.
+// The order of execution for CallbackTypes in the same event or state is:
+// The concrete CallbackType has precedence over a general one, e.g.
+// BeforEvent E will be fired before BeforeAllEvents.
 type Callback[E constraints.Ordered, S constraints.Ordered] struct {
 	// When should the callback be called.
 	When CallbackType
@@ -51,32 +55,25 @@ type Callback[E constraints.Ordered, S constraints.Ordered] struct {
 	F func(*CallbackContext[E, S])
 }
 
-// Callbacks is a shorthand for defining the callbacks in NewFSM.
+// Callbacks is a shorthand for defining the callbacks in New.
 type Callbacks[E constraints.Ordered, S constraints.Ordered] []Callback[E, S]
 
 // CallbackContext is the info that get passed as a reference in the callbacks.
 type CallbackContext[E constraints.Ordered, S constraints.Ordered] struct {
 	// FSM is an reference to the current FSM.
 	FSM *FSM[E, S]
-
 	// Event is the event name.
 	Event E
-
 	// Src is the state before the transition.
 	Src S
-
 	// Dst is the state after the transition.
 	Dst S
-
 	// Err is an optional error that can be returned from a callback.
 	Err error
-
 	// Args is an optional list of arguments passed to the callback.
 	Args []any
-
 	// canceled is an internal flag set if the transition is canceled.
 	canceled bool
-
 	// async is an internal flag set if the transition should be asynchronous
 	async bool
 }
