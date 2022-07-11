@@ -219,7 +219,16 @@ func (f *FSM[E, S]) Event(event E, args ...any) error {
 		return UnknownEventError{fmt.Sprintf("%v", event)}
 	}
 
-	e := &CallbackContext[E, S]{f, event, f.current, dst, nil, args, false, false}
+	e := &CallbackContext[E, S]{
+		FSM:      f,
+		Event:    event,
+		Src:      f.current,
+		Dst:      dst,
+		Err:      nil,
+		Args:     args,
+		canceled: false,
+		async:    false,
+	}
 
 	err := f.beforeEventCallbacks(e)
 	if err != nil {
