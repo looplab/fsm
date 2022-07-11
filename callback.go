@@ -127,6 +127,9 @@ func (c *Callback[E, S]) validate() error {
 		if c.Event != zeroEvent {
 			return fmt.Errorf("%v given with event %v", c.When, c.Event)
 		}
+		if c.State != zeroState {
+			return fmt.Errorf("%v given with state %v", c.When, c.State)
+		}
 	case EnterState, LeaveState:
 		if c.State == zeroState {
 			return fmt.Errorf("%v given but no state", c.When)
@@ -137,6 +140,9 @@ func (c *Callback[E, S]) validate() error {
 	case EnterAllStates, LeaveAllStates:
 		if c.State != zeroState {
 			return fmt.Errorf("%v given with state %v", c.When, c.State)
+		}
+		if c.Event != zeroEvent {
+			return fmt.Errorf("%v given with event %v", c.When, c.Event)
 		}
 	default:
 		return fmt.Errorf("invalid callback:%v", c)
