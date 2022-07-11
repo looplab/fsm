@@ -1083,3 +1083,29 @@ func BenchmarkFSM(b *testing.B) {
 		_ = fsm.Event("open")
 	}
 }
+
+func BenchmarkGenericFSMManyEvents(b *testing.B) {
+	transitions := Transitions[int, int]{}
+	for i := 0; i < 1000; i++ {
+		transitions = append(transitions, Transition[int, int]{Event: i, Src: []int{i}, Dst: i + 1})
+	}
+	callbacks := Callbacks[int, int]{}
+	for i := 0; i < 1000; i++ {
+		callbacks = append(callbacks, Callback[int, int]{
+			When:  BeforeEvent,
+			Event: i,
+			F: func(cc *CallbackContext[int, int]) {
+				fmt.Print(cc.Event)
+			},
+		})
+	}
+
+	fsm := New(
+		0,
+		transitions,
+		callbacks,
+	)
+	for i := 0; i < b.N; i++ {
+		_ = fsm.Event(1)
+	}
+}
