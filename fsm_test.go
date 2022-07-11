@@ -633,6 +633,33 @@ func TestCallbackArgs(t *testing.T) {
 	}
 }
 
+func TestCallbackMeta(t *testing.T) {
+	fsm := New(
+		"start",
+		Transitions[string, string]{
+			{Event: "run", Src: []string{"start"}, Dst: "end"},
+		},
+		Callbacks[string, string]{
+			Callback[string, string]{When: BeforeEvent, Event: "run",
+				F: func(e *CallbackContext[string, string]) {
+					value, ok := e.FSM.Metadata("key")
+					if !ok {
+						t.Error("no metadata with `key` found")
+					}
+					if value != "value" {
+						t.Error("incorrect value")
+					}
+				},
+			},
+		},
+	)
+	fsm.SetMetadata("key", "value")
+	err := fsm.Event("run")
+	if err != nil {
+		t.Errorf("transition failed %v", err)
+	}
+}
+
 func TestCallbackPanic(t *testing.T) {
 	panicMsg := "unexpected panic"
 	defer func() {
