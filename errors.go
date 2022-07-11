@@ -14,6 +14,8 @@
 
 package fsm
 
+import "fmt"
+
 // InvalidEventError is returned by FSM.Event() when the event cannot be called
 // in the current state.
 type InvalidEventError struct {
@@ -22,7 +24,7 @@ type InvalidEventError struct {
 }
 
 func (e InvalidEventError) Error() string {
-	return "event " + e.Event + " inappropriate in current state " + e.State
+	return fmt.Sprintf("event %s inappropriate in current state %s", e.Event, e.State)
 }
 
 // UnknownEventError is returned by FSM.Event() when the event is not defined.
@@ -31,7 +33,7 @@ type UnknownEventError struct {
 }
 
 func (e UnknownEventError) Error() string {
-	return "event " + e.Event + " does not exist"
+	return fmt.Sprintf("event %s does not exist", e.Event)
 }
 
 // InTransitionError is returned by FSM.Event() when an asynchronous transition
@@ -41,7 +43,7 @@ type InTransitionError struct {
 }
 
 func (e InTransitionError) Error() string {
-	return "event " + e.Event + " inappropriate because previous transition did not complete"
+	return fmt.Sprintf("event %s inappropriate because previous transition did not complete", e.Event)
 }
 
 // NotInTransitionError is returned by FSM.Transition() when an asynchronous
@@ -60,7 +62,7 @@ type NoTransitionError struct {
 
 func (e NoTransitionError) Error() string {
 	if e.Err != nil {
-		return "no transition with error: " + e.Err.Error()
+		return fmt.Sprintf("no transition with error: %s", e.Err.Error())
 	}
 	return "no transition"
 }
@@ -73,7 +75,7 @@ type CanceledError struct {
 
 func (e CanceledError) Error() string {
 	if e.Err != nil {
-		return "transition canceled with error: " + e.Err.Error()
+		return fmt.Sprintf("transition canceled with error: %s", e.Err.Error())
 	}
 	return "transition canceled"
 }
@@ -86,7 +88,7 @@ type AsyncError struct {
 
 func (e AsyncError) Error() string {
 	if e.Err != nil {
-		return "async started with error: " + e.Err.Error()
+		return fmt.Sprintf("async started with error: %s", e.Err.Error())
 	}
 	return "async started"
 }

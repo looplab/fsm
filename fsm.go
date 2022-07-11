@@ -287,80 +287,80 @@ func (t defaultTransitioner[E, S]) transition(f *FSM[E, S]) error {
 	return nil
 }
 
-// beforeEventCallbacks calls the before_ callbacks, first the named then the
+// beforeEventCallbacks calls the before callbacks, first the named then the
 // general version.
-func (f *FSM[E, S]) beforeEventCallbacks(e *CallbackContext[E, S]) error {
+func (f *FSM[E, S]) beforeEventCallbacks(cc *CallbackContext[E, S]) error {
 	for _, cb := range f.callbacks {
 		if cb.When == BeforeEvent {
-			if cb.Event == e.Event {
-				cb.F(e)
-				if e.canceled {
-					return CanceledError{e.Err}
+			if cb.Event == cc.Event {
+				cb.F(cc)
+				if cc.canceled {
+					return CanceledError{cc.Err}
 				}
 			}
 		}
 		if cb.When == BeforeAllEvents {
-			cb.F(e)
-			if e.canceled {
-				return CanceledError{e.Err}
+			cb.F(cc)
+			if cc.canceled {
+				return CanceledError{cc.Err}
 			}
 		}
 	}
 	return nil
 }
 
-// leaveStateCallbacks calls the leave_ callbacks, first the named then the
+// leaveStateCallbacks calls the leave callbacks, first the named then the
 // general version.
-func (f *FSM[E, S]) leaveStateCallbacks(e *CallbackContext[E, S]) error {
+func (f *FSM[E, S]) leaveStateCallbacks(cc *CallbackContext[E, S]) error {
 	for _, cb := range f.callbacks {
 		if cb.When == LeaveState {
-			if cb.State == e.Src {
-				cb.F(e)
-				if e.canceled {
-					return CanceledError{e.Err}
-				} else if e.async {
-					return AsyncError{e.Err}
+			if cb.State == cc.Src {
+				cb.F(cc)
+				if cc.canceled {
+					return CanceledError{cc.Err}
+				} else if cc.async {
+					return AsyncError{cc.Err}
 				}
 			}
 		}
 		if cb.When == LeaveAllStates {
-			cb.F(e)
-			if e.canceled {
-				return CanceledError{e.Err}
-			} else if e.async {
-				return AsyncError{e.Err}
+			cb.F(cc)
+			if cc.canceled {
+				return CanceledError{cc.Err}
+			} else if cc.async {
+				return AsyncError{cc.Err}
 			}
 		}
 	}
 	return nil
 }
 
-// enterStateCallbacks calls the enter_ callbacks, first the named then the
+// enterStateCallbacks calls the enter callbacks, first the named then the
 // general version.
-func (f *FSM[E, S]) enterStateCallbacks(e *CallbackContext[E, S]) {
+func (f *FSM[E, S]) enterStateCallbacks(cc *CallbackContext[E, S]) {
 	for _, cb := range f.callbacks {
 		if cb.When == EnterState {
-			if cb.State == e.Dst {
-				cb.F(e)
+			if cb.State == cc.Dst {
+				cb.F(cc)
 			}
 		}
 		if cb.When == EnterAllStates {
-			cb.F(e)
+			cb.F(cc)
 		}
 	}
 }
 
-// afterEventCallbacks calls the after_ callbacks, first the named then the
+// afterEventCallbacks calls the after callbacks, first the named then the
 // general version.
-func (f *FSM[E, S]) afterEventCallbacks(e *CallbackContext[E, S]) {
+func (f *FSM[E, S]) afterEventCallbacks(cc *CallbackContext[E, S]) {
 	for _, cb := range f.callbacks {
 		if cb.When == AfterEvent {
-			if cb.Event == e.Event {
-				cb.F(e)
+			if cb.Event == cc.Event {
+				cb.F(cc)
 			}
 		}
 		if cb.When == AfterAllEvents {
-			cb.F(e)
+			cb.F(cc)
 		}
 	}
 }
