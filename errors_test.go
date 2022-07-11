@@ -22,7 +22,7 @@ import (
 func TestInvalidEventError(t *testing.T) {
 	event := "invalid event"
 	state := "state"
-	e := InvalidEventError{Event: event, State: state}
+	e := InvalidEventError[string, string]{Event: event, State: state}
 	if e.Error() != "event "+e.Event+" inappropriate in current state "+e.State {
 		t.Error("InvalidEventError string mismatch")
 	}

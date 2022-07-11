@@ -88,7 +88,7 @@ func TestInappropriateEvent(t *testing.T) {
 		Callbacks[string, string]{},
 	)
 	err := fsm.Event("close")
-	if e, ok := err.(InvalidEventError); !ok && e.Event != "close" && e.State != "closed" {
+	if e, ok := err.(InvalidEventError[string, string]); !ok && e.Event != "close" && e.State != "closed" {
 		t.Error("expected 'InvalidEventError' with correct state and event")
 	}
 }

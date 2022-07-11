@@ -14,17 +14,21 @@
 
 package fsm
 
-import "fmt"
+import (
+	"fmt"
+
+	"golang.org/x/exp/constraints"
+)
 
 // InvalidEventError is returned by FSM.Event() when the event cannot be called
 // in the current state.
-type InvalidEventError struct {
-	Event string
-	State string
+type InvalidEventError[E constraints.Ordered, S constraints.Ordered] struct {
+	Event E
+	State S
 }
 
-func (e InvalidEventError) Error() string {
-	return fmt.Sprintf("event %s inappropriate in current state %s", e.Event, e.State)
+func (e InvalidEventError[E, S]) Error() string {
+	return fmt.Sprintf("event %v inappropriate in current state %v", e.Event, e.State)
 }
 
 // UnknownEventError is returned by FSM.Event() when the event is not defined.

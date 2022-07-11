@@ -25,6 +25,7 @@
 package fsm
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 
@@ -212,7 +213,7 @@ func (f *FSM[E, S]) Event(event E, args ...any) error {
 	if !ok {
 		for ekey := range f.transitions {
 			if ekey.event == event {
-				return InvalidEventError{fmt.Sprintf("%v", event), fmt.Sprintf("%v", f.current)}
+				return InvalidEventError[E, S]{event, f.current}
 			}
 		}
 		return UnknownEventError{fmt.Sprintf("%v", event)}
@@ -241,7 +242,8 @@ func (f *FSM[E, S]) Event(event E, args ...any) error {
 	}
 
 	if err = f.leaveStateCallbacks(e); err != nil {
-		if _, ok := err.(CanceledError); ok {
+		var ce *CanceledError
+		if errors.As(err, &ce) {
 			f.transition = nil
 		}
 		return err
