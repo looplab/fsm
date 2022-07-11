@@ -32,13 +32,16 @@ func (t fakeTransitioner[E, S]) transition(f *FSM[E, S]) error {
 }
 
 func TestSameState(t *testing.T) {
-	fsm := New(
+	fsm, err := New(
 		"start",
 		Transitions[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "start"},
 		},
 		Callbacks[string, string]{},
 	)
+	if err != nil {
+		t.Errorf("constructor failed:%s", err)
+	}
 	_ = fsm.Event("run")
 	if fsm.Current() != "start" {
 		t.Error("expected state to be 'start'")
@@ -46,40 +49,48 @@ func TestSameState(t *testing.T) {
 }
 
 func TestSetState(t *testing.T) {
-	fsm := New(
+	fsm, err := New(
 		"walking",
 		Transitions[string, string]{
 			{Event: "walk", Src: []string{"start"}, Dst: "walking"},
 		},
 		Callbacks[string, string]{},
 	)
+	if err != nil {
+		t.Errorf("constructor failed:%s", err)
+	}
+
 	fsm.SetState("start")
 	if fsm.Current() != "start" {
 		t.Error("expected state to be 'walking'")
 	}
-	err := fsm.Event("walk")
+	err = fsm.Event("walk")
 	if err != nil {
 		t.Error("transition is expected no error")
 	}
 }
 
 func TestBadTransition(t *testing.T) {
-	fsm := New(
+	fsm, err := New(
 		"start",
 		Transitions[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "running"},
 		},
 		Callbacks[string, string]{},
 	)
+	if err != nil {
+		t.Errorf("constructor failed:%s", err)
+	}
+
 	fsm.transitioner = new(fakeTransitioner[string, string])
-	err := fsm.Event("run")
+	err = fsm.Event("run")
 	if err == nil {
 		t.Error("bad transition should give an error")
 	}
 }
 
 func TestInappropriateEvent(t *testing.T) {
-	fsm := New(
+	fsm, err := New(
 		"closed",
 		Transitions[string, string]{
 			{Event: "open", Src: []string{"closed"}, Dst: "open"},
@@ -87,14 +98,18 @@ func TestInappropriateEvent(t *testing.T) {
 		},
 		Callbacks[string, string]{},
 	)
-	err := fsm.Event("close")
+	if err != nil {
+		t.Errorf("constructor failed:%s", err)
+	}
+
+	err = fsm.Event("close")
 	if e, ok := err.(InvalidEventError[string, string]); !ok && e.Event != "close" && e.State != "closed" {
 		t.Error("expected 'InvalidEventError' with correct state and event")
 	}
 }
 
 func TestInvalidEvent(t *testing.T) {
-	fsm := New(
+	fsm, err := New(
 		"closed",
 		Transitions[string, string]{
 			{Event: "open", Src: []string{"closed"}, Dst: "open"},
@@ -102,14 +117,18 @@ func TestInvalidEvent(t *testing.T) {
 		},
 		Callbacks[string, string]{},
 	)
-	err := fsm.Event("lock")
+	if err != nil {
+		t.Errorf("constructor failed:%s", err)
+	}
+
+	err = fsm.Event("lock")
 	if e, ok := err.(UnknownEventError); !ok && e.Event != "close" {
 		t.Error("expected 'UnknownEventError' with correct event")
 	}
 }
 
 func TestMultipleSources(t *testing.T) {
-	fsm := New(
+	fsm, err := New(
 		"one",
 		Transitions[string, string]{
 			{Event: "first", Src: []string{"one"}, Dst: "two"},
@@ -118,8 +137,11 @@ func TestMultipleSources(t *testing.T) {
 		},
 		Callbacks[string, string]{},
 	)
+	if err != nil {
+		t.Errorf("constructor failed:%s", err)
+	}
 
-	err := fsm.Event("first")
+	err = fsm.Event("first")
 	if err != nil {
 		t.Errorf("transition failed %v", err)
 	}
@@ -154,7 +176,7 @@ func TestMultipleSources(t *testing.T) {
 }
 
 func TestMultipleEvents(t *testing.T) {
-	fsm := New(
+	fsm, err := New(
 		"start",
 		Transitions[string, string]{
 			{Event: "first", Src: []string{"start"}, Dst: "one"},
@@ -165,8 +187,11 @@ func TestMultipleEvents(t *testing.T) {
 		},
 		Callbacks[string, string]{},
 	)
+	if err != nil {
+		t.Errorf("constructor failed:%s", err)
+	}
 
-	err := fsm.Event("first")
+	err = fsm.Event("first")
 	if err != nil {
 		t.Errorf("transition failed %v", err)
 	}
@@ -211,7 +236,7 @@ func TestGenericCallbacks(t *testing.T) {
 	enterState := false
 	afterEvent := false
 
-	fsm := New(
+	fsm, err := New(
 		"start",
 		Transitions[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
@@ -239,8 +264,11 @@ func TestGenericCallbacks(t *testing.T) {
 			},
 		},
 	)
+	if err != nil {
+		t.Errorf("constructor failed:%s", err)
+	}
 
-	err := fsm.Event("run")
+	err = fsm.Event("run")
 	if err != nil {
 		t.Errorf("transition failed %v", err)
 	}
@@ -255,7 +283,7 @@ func TestSpecificCallbacks(t *testing.T) {
 	enterState := false
 	afterEvent := false
 
-	fsm := New(
+	fsm, err := New(
 		"start",
 		Transitions[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
@@ -283,8 +311,11 @@ func TestSpecificCallbacks(t *testing.T) {
 			},
 		},
 	)
+	if err != nil {
+		t.Errorf("constructor failed:%s", err)
+	}
 
-	err := fsm.Event("run")
+	err = fsm.Event("run")
 	if err != nil {
 		t.Errorf("transition failed %v", err)
 	}
@@ -297,7 +328,7 @@ func TestSpecificCallbacksShortform(t *testing.T) {
 	enterState := false
 	afterEvent := false
 
-	fsm := New(
+	fsm, err := New(
 		"start",
 		Transitions[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
@@ -315,8 +346,11 @@ func TestSpecificCallbacksShortform(t *testing.T) {
 			},
 		},
 	)
+	if err != nil {
+		t.Errorf("constructor failed:%s", err)
+	}
 
-	err := fsm.Event("run")
+	err = fsm.Event("run")
 	if err != nil {
 		t.Errorf("transition failed %v", err)
 	}
@@ -328,7 +362,7 @@ func TestSpecificCallbacksShortform(t *testing.T) {
 func TestBeforeEventWithoutTransition(t *testing.T) {
 	beforeEvent := true
 
-	fsm := New(
+	fsm, err := New(
 		"start",
 		Transitions[string, string]{
 			{Event: "dontrun", Src: []string{"start"}, Dst: "start"},
@@ -341,8 +375,11 @@ func TestBeforeEventWithoutTransition(t *testing.T) {
 			},
 		},
 	)
+	if err != nil {
+		t.Errorf("constructor failed:%s", err)
+	}
 
-	err := fsm.Event("dontrun")
+	err = fsm.Event("dontrun")
 	if e, ok := err.(NoTransitionError); !ok && e.Err != nil {
 		t.Error("expected 'NoTransitionError' without custom error")
 	}
@@ -356,7 +393,7 @@ func TestBeforeEventWithoutTransition(t *testing.T) {
 }
 
 func TestCancelBeforeGenericEvent(t *testing.T) {
-	fsm := New(
+	fsm, err := New(
 		"start",
 		Transitions[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
@@ -369,6 +406,9 @@ func TestCancelBeforeGenericEvent(t *testing.T) {
 			},
 		},
 	)
+	if err != nil {
+		t.Errorf("constructor failed:%s", err)
+	}
 	_ = fsm.Event("run")
 	if fsm.Current() != "start" {
 		t.Error("expected state to be 'start'")
@@ -376,7 +416,7 @@ func TestCancelBeforeGenericEvent(t *testing.T) {
 }
 
 func TestCancelBeforeSpecificEvent(t *testing.T) {
-	fsm := New(
+	fsm, err := New(
 		"start",
 		Transitions[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
@@ -389,6 +429,9 @@ func TestCancelBeforeSpecificEvent(t *testing.T) {
 			},
 		},
 	)
+	if err != nil {
+		t.Errorf("constructor failed:%s", err)
+	}
 	_ = fsm.Event("run")
 	if fsm.Current() != "start" {
 		t.Error("expected state to be 'start'")
@@ -396,7 +439,7 @@ func TestCancelBeforeSpecificEvent(t *testing.T) {
 }
 
 func TestCancelLeaveGenericState(t *testing.T) {
-	fsm := New(
+	fsm, err := New(
 		"start",
 		Transitions[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
@@ -409,6 +452,10 @@ func TestCancelLeaveGenericState(t *testing.T) {
 			},
 		},
 	)
+	if err != nil {
+		t.Errorf("constructor failed:%s", err)
+	}
+
 	_ = fsm.Event("run")
 	if fsm.Current() != "start" {
 		t.Error("expected state to be 'start'")
@@ -416,7 +463,7 @@ func TestCancelLeaveGenericState(t *testing.T) {
 }
 
 func TestCancelLeaveSpecificState(t *testing.T) {
-	fsm := New(
+	fsm, err := New(
 		"start",
 		Transitions[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
@@ -429,6 +476,10 @@ func TestCancelLeaveSpecificState(t *testing.T) {
 			},
 		},
 	)
+	if err != nil {
+		t.Errorf("constructor failed:%s", err)
+	}
+
 	_ = fsm.Event("run")
 	if fsm.Current() != "start" {
 		t.Error("expected state to be 'start'")
@@ -436,7 +487,7 @@ func TestCancelLeaveSpecificState(t *testing.T) {
 }
 
 func TestCancelWithError(t *testing.T) {
-	fsm := New(
+	fsm, err := New(
 		"start",
 		Transitions[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
@@ -449,7 +500,10 @@ func TestCancelWithError(t *testing.T) {
 			},
 		},
 	)
-	err := fsm.Event("run")
+	if err != nil {
+		t.Errorf("constructor failed:%s", err)
+	}
+	err = fsm.Event("run")
 	if _, ok := err.(CanceledError); !ok {
 		t.Error("expected only 'CanceledError'")
 	}
@@ -464,7 +518,7 @@ func TestCancelWithError(t *testing.T) {
 }
 
 func TestAsyncTransitionGenericState(t *testing.T) {
-	fsm := New(
+	fsm, err := New(
 		"start",
 		Transitions[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
@@ -477,11 +531,14 @@ func TestAsyncTransitionGenericState(t *testing.T) {
 			},
 		},
 	)
+	if err != nil {
+		t.Errorf("constructor failed:%s", err)
+	}
 	_ = fsm.Event("run")
 	if fsm.Current() != "start" {
 		t.Error("expected state to be 'start'")
 	}
-	err := fsm.Transition()
+	err = fsm.Transition()
 	if err != nil {
 		t.Errorf("transition failed %v", err)
 	}
@@ -491,7 +548,7 @@ func TestAsyncTransitionGenericState(t *testing.T) {
 }
 
 func TestAsyncTransitionSpecificState(t *testing.T) {
-	fsm := New(
+	fsm, err := New(
 		"start",
 		Transitions[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
@@ -504,11 +561,14 @@ func TestAsyncTransitionSpecificState(t *testing.T) {
 			},
 		},
 	)
+	if err != nil {
+		t.Errorf("constructor failed:%s", err)
+	}
 	_ = fsm.Event("run")
 	if fsm.Current() != "start" {
 		t.Error("expected state to be 'start'")
 	}
-	err := fsm.Transition()
+	err = fsm.Transition()
 	if err != nil {
 		t.Errorf("transition failed %v", err)
 	}
@@ -518,7 +578,7 @@ func TestAsyncTransitionSpecificState(t *testing.T) {
 }
 
 func TestAsyncTransitionInProgress(t *testing.T) {
-	fsm := New(
+	fsm, err := New(
 		"start",
 		Transitions[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
@@ -532,8 +592,11 @@ func TestAsyncTransitionInProgress(t *testing.T) {
 			},
 		},
 	)
+	if err != nil {
+		t.Errorf("constructor failed:%s", err)
+	}
 	_ = fsm.Event("run")
-	err := fsm.Event("reset")
+	err = fsm.Event("reset")
 	if e, ok := err.(InTransitionError); !ok && e.Event != "reset" {
 		t.Error("expected 'InTransitionError' with correct state")
 	}
@@ -551,7 +614,7 @@ func TestAsyncTransitionInProgress(t *testing.T) {
 }
 
 func TestAsyncTransitionNotInProgress(t *testing.T) {
-	fsm := New(
+	fsm, err := New(
 		"start",
 		Transitions[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
@@ -559,14 +622,17 @@ func TestAsyncTransitionNotInProgress(t *testing.T) {
 		},
 		Callbacks[string, string]{},
 	)
-	err := fsm.Transition()
+	if err != nil {
+		t.Errorf("constructor failed:%s", err)
+	}
+	err = fsm.Transition()
 	if _, ok := err.(NotInTransitionError); !ok {
 		t.Error("expected 'NotInTransitionError'")
 	}
 }
 
 func TestCallbackNoError(t *testing.T) {
-	fsm := New(
+	fsm, err := New(
 		"start",
 		Transitions[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
@@ -578,6 +644,9 @@ func TestCallbackNoError(t *testing.T) {
 			},
 		},
 	)
+	if err != nil {
+		t.Errorf("constructor failed:%s", err)
+	}
 	e := fsm.Event("run")
 	if e != nil {
 		t.Error("expected no error")
@@ -585,7 +654,7 @@ func TestCallbackNoError(t *testing.T) {
 }
 
 func TestCallbackError(t *testing.T) {
-	fsm := New(
+	fsm, err := New(
 		"start",
 		Transitions[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
@@ -598,6 +667,9 @@ func TestCallbackError(t *testing.T) {
 			},
 		},
 	)
+	if err != nil {
+		t.Errorf("constructor failed:%s", err)
+	}
 	e := fsm.Event("run")
 	if e.Error() != "error" {
 		t.Error("expected error to be 'error'")
@@ -605,7 +677,7 @@ func TestCallbackError(t *testing.T) {
 }
 
 func TestCallbackArgs(t *testing.T) {
-	fsm := New(
+	fsm, err := New(
 		"start",
 		Transitions[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
@@ -627,14 +699,17 @@ func TestCallbackArgs(t *testing.T) {
 			},
 		},
 	)
-	err := fsm.Event("run", "test")
+	if err != nil {
+		t.Errorf("constructor failed:%s", err)
+	}
+	err = fsm.Event("run", "test")
 	if err != nil {
 		t.Errorf("transition failed %v", err)
 	}
 }
 
 func TestCallbackMeta(t *testing.T) {
-	fsm := New(
+	fsm, err := New(
 		"start",
 		Transitions[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
@@ -653,8 +728,11 @@ func TestCallbackMeta(t *testing.T) {
 			},
 		},
 	)
+	if err != nil {
+		t.Errorf("constructor failed:%s", err)
+	}
 	fsm.SetMetadata("key", "value")
-	err := fsm.Event("run")
+	err = fsm.Event("run")
 	if err != nil {
 		t.Errorf("transition failed %v", err)
 	}
@@ -668,7 +746,7 @@ func TestCallbackPanic(t *testing.T) {
 			t.Errorf("expected panic message to be '%s', got %v", panicMsg, r)
 		}
 	}()
-	fsm := New(
+	fsm, err := New(
 		"start",
 		Transitions[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
@@ -681,6 +759,9 @@ func TestCallbackPanic(t *testing.T) {
 			},
 		},
 	)
+	if err != nil {
+		t.Errorf("constructor failed:%s", err)
+	}
 	e := fsm.Event("run")
 	if e.Error() != "error" {
 		t.Error("expected error to be 'error'")
@@ -689,7 +770,7 @@ func TestCallbackPanic(t *testing.T) {
 
 func TestNoDeadLock(t *testing.T) {
 	var fsm *FSM[string, string]
-	fsm = New(
+	fsm, err := New(
 		"start",
 		Transitions[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
@@ -702,14 +783,17 @@ func TestNoDeadLock(t *testing.T) {
 			},
 		},
 	)
-	err := fsm.Event("run")
+	if err != nil {
+		t.Errorf("constructor failed:%s", err)
+	}
+	err = fsm.Event("run")
 	if err != nil {
 		t.Errorf("transition failed %v", err)
 	}
 }
 
 func TestThreadSafetyRaceCondition(t *testing.T) {
-	fsm := New(
+	fsm, err := New(
 		"start",
 		Transitions[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
@@ -721,13 +805,16 @@ func TestThreadSafetyRaceCondition(t *testing.T) {
 			},
 		},
 	)
+	if err != nil {
+		t.Errorf("constructor failed:%s", err)
+	}
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		_ = fsm.Current()
 	}()
-	err := fsm.Event("run")
+	err = fsm.Event("run")
 	if err != nil {
 		t.Errorf("transition failed %v", err)
 	}
@@ -738,7 +825,7 @@ func TestDoubleTransition(t *testing.T) {
 	var fsm *FSM[string, string]
 	var wg sync.WaitGroup
 	wg.Add(2)
-	fsm = New(
+	fsm, err := New(
 		"start",
 		Transitions[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "end"},
@@ -769,28 +856,34 @@ func TestDoubleTransition(t *testing.T) {
 			},
 		},
 	)
-	if err := fsm.Event("run"); err != nil {
+	if err != nil {
+		t.Errorf("constructor failed:%s", err)
+	}
+	if err = fsm.Event("run"); err != nil {
 		fmt.Println(err)
 	}
 	wg.Wait()
 }
 
 func TestNoTransition(t *testing.T) {
-	fsm := New(
+	fsm, err := New(
 		"start",
 		Transitions[string, string]{
 			{Event: "run", Src: []string{"start"}, Dst: "start"},
 		},
 		Callbacks[string, string]{},
 	)
-	err := fsm.Event("run")
+	if err != nil {
+		t.Errorf("constructor failed:%s", err)
+	}
+	err = fsm.Event("run")
 	if _, ok := err.(NoTransitionError); !ok {
 		t.Error("expected 'NoTransitionError'")
 	}
 }
 
 func ExampleNew() {
-	fsm := New(
+	fsm, err := New(
 		"green",
 		Transitions[string, string]{
 			{Event: "warn", Src: []string{"green"}, Dst: "yellow"},
@@ -842,8 +935,11 @@ func ExampleNew() {
 			},
 		},
 	)
+	if err != nil {
+		fmt.Println(err)
+	}
 	fmt.Println(fsm.Current())
-	err := fsm.Event("warn")
+	err = fsm.Event("warn")
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -862,7 +958,7 @@ func ExampleNew() {
 }
 
 func ExampleFSM_Current() {
-	fsm := New(
+	fsm, err := New(
 		"closed",
 		Transitions[string, string]{
 			{Event: "open", Src: []string{"closed"}, Dst: "open"},
@@ -870,12 +966,15 @@ func ExampleFSM_Current() {
 		},
 		Callbacks[string, string]{},
 	)
+	if err != nil {
+		fmt.Println(err)
+	}
 	fmt.Println(fsm.Current())
 	// Output: closed
 }
 
 func ExampleFSM_Is() {
-	fsm := New(
+	fsm, err := New(
 		"closed",
 		Transitions[string, string]{
 			{Event: "open", Src: []string{"closed"}, Dst: "open"},
@@ -883,6 +982,9 @@ func ExampleFSM_Is() {
 		},
 		Callbacks[string, string]{},
 	)
+	if err != nil {
+		fmt.Println(err)
+	}
 	fmt.Println(fsm.Is("closed"))
 	fmt.Println(fsm.Is("open"))
 	// Output:
@@ -891,7 +993,7 @@ func ExampleFSM_Is() {
 }
 
 func ExampleFSM_Can() {
-	fsm := New(
+	fsm, err := New(
 		"closed",
 		Transitions[string, string]{
 			{Event: "open", Src: []string{"closed"}, Dst: "open"},
@@ -899,6 +1001,9 @@ func ExampleFSM_Can() {
 		},
 		Callbacks[string, string]{},
 	)
+	if err != nil {
+		fmt.Println(err)
+	}
 	fmt.Println(fsm.Can("open"))
 	fmt.Println(fsm.Can("close"))
 	// Output:
@@ -907,7 +1012,7 @@ func ExampleFSM_Can() {
 }
 
 func ExampleFSM_AvailableTransitions() {
-	fsm := New(
+	fsm, err := New(
 		"closed",
 		Transitions[string, string]{
 			{Event: "open", Src: []string{"closed"}, Dst: "open"},
@@ -916,6 +1021,9 @@ func ExampleFSM_AvailableTransitions() {
 		},
 		Callbacks[string, string]{},
 	)
+	if err != nil {
+		fmt.Println(err)
+	}
 	// sort the results ordering is consistent for the output checker
 	transitions := fsm.AvailableTransitions()
 	sort.Strings(transitions)
@@ -925,7 +1033,7 @@ func ExampleFSM_AvailableTransitions() {
 }
 
 func ExampleFSM_Cannot() {
-	fsm := New(
+	fsm, err := New(
 		"closed",
 		Transitions[string, string]{
 			{Event: "open", Src: []string{"closed"}, Dst: "open"},
@@ -933,6 +1041,9 @@ func ExampleFSM_Cannot() {
 		},
 		Callbacks[string, string]{},
 	)
+	if err != nil {
+		fmt.Println(err)
+	}
 	fmt.Println(fsm.Cannot("open"))
 	fmt.Println(fsm.Cannot("close"))
 	// Output:
@@ -941,7 +1052,7 @@ func ExampleFSM_Cannot() {
 }
 
 func ExampleFSM_Event() {
-	fsm := New(
+	fsm, err := New(
 		"closed",
 		Transitions[string, string]{
 			{Event: "open", Src: []string{"closed"}, Dst: "open"},
@@ -949,8 +1060,11 @@ func ExampleFSM_Event() {
 		},
 		Callbacks[string, string]{},
 	)
+	if err != nil {
+		fmt.Println(err)
+	}
 	fmt.Println(fsm.Current())
-	err := fsm.Event("open")
+	err = fsm.Event("open")
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -967,7 +1081,7 @@ func ExampleFSM_Event() {
 }
 
 func ExampleFSM_Transition() {
-	fsm := New(
+	fsm, err := New(
 		"closed",
 		Transitions[string, string]{
 			{Event: "open", Src: []string{"closed"}, Dst: "open"},
@@ -982,7 +1096,10 @@ func ExampleFSM_Transition() {
 			},
 		},
 	)
-	err := fsm.Event("open")
+	if err != nil {
+		fmt.Println(err)
+	}
+	err = fsm.Event("open")
 	if e, ok := err.(AsyncError); !ok && e.Err != nil {
 		fmt.Println(err)
 	}
@@ -1010,7 +1127,7 @@ const (
 )
 
 func ExampleFSM_Event_generic() {
-	fsm := New(
+	fsm, err := New(
 		IsClosed,
 		Transitions[MyEvent, MyState]{
 			{Event: Open, Src: []MyState{IsClosed}, Dst: IsOpen},
@@ -1018,15 +1135,19 @@ func ExampleFSM_Event_generic() {
 		},
 		Callbacks[MyEvent, MyState]{
 			Callback[MyEvent, MyState]{
-				When: BeforeEvent,
+				When:  BeforeEvent,
+				Event: Close,
 				F: func(cc *CallbackContext[MyEvent, MyState]) {
 
 				},
 			},
 		},
 	)
+	if err != nil {
+		fmt.Println(err)
+	}
 	fmt.Println(fsm.Current())
-	err := fsm.Event(Open)
+	err = fsm.Event(Open)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -1043,7 +1164,7 @@ func ExampleFSM_Event_generic() {
 }
 
 func BenchmarkGenericFSM(b *testing.B) {
-	fsm := New(
+	fsm, err := New(
 		IsClosed,
 		Transitions[MyEvent, MyState]{
 			{Event: Open, Src: []MyState{IsClosed}, Dst: IsOpen},
@@ -1052,19 +1173,23 @@ func BenchmarkGenericFSM(b *testing.B) {
 		Callbacks[MyEvent, MyState]{
 
 			Callback[MyEvent, MyState]{
-				When: BeforeEvent,
+				When:  BeforeEvent,
+				Event: Open,
 				F: func(cc *CallbackContext[MyEvent, MyState]) {
 
 				},
 			},
 		},
 	)
+	if err != nil {
+		fmt.Println(err)
+	}
 	for i := 0; i < b.N; i++ {
 		_ = fsm.Event(Open)
 	}
 }
 func BenchmarkFSM(b *testing.B) {
-	fsm := New(
+	fsm, err := New(
 		"closed",
 		Transitions[string, string]{
 			{Event: "open", Src: []string{"closed"}, Dst: "open"},
@@ -1072,13 +1197,17 @@ func BenchmarkFSM(b *testing.B) {
 		},
 		Callbacks[string, string]{
 			Callback[string, string]{
-				When: BeforeEvent,
+				When:  BeforeEvent,
+				Event: "open",
 				F: func(cc *CallbackContext[string, string]) {
 
 				},
 			},
 		},
 	)
+	if err != nil {
+		fmt.Println(err)
+	}
 	for i := 0; i < b.N; i++ {
 		_ = fsm.Event("open")
 	}
@@ -1092,19 +1221,21 @@ func BenchmarkGenericFSMManyEvents(b *testing.B) {
 	callbacks := Callbacks[int, int]{}
 	for i := 0; i < 100; i++ {
 		callbacks = append(callbacks, Callback[int, int]{
-			When:  BeforeEvent,
-			Event: i,
+			When: BeforeAllEvents,
 			F: func(cc *CallbackContext[int, int]) {
 				fmt.Print(cc.Event)
 			},
 		})
 	}
 
-	fsm := New(
+	fsm, err := New(
 		0,
 		transitions,
 		callbacks,
 	)
+	if err != nil {
+		fmt.Println(err)
+	}
 	for i := 0; i < b.N; i++ {
 		_ = fsm.Event(1)
 	}

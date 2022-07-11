@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	f := fsm.New(
+	f, err := fsm.New(
 		"idle",
 		fsm.Transistions[string, string]{
 			{Event: "scan", Src: []string{"idle"}, Dst: "scanning"},
@@ -42,10 +42,12 @@ func main() {
 			},
 		},
 	)
-
+	if err != nil {
+		fmt.Println(err)
+	}
 	fmt.Println(f.Current())
 
-	err := f.Event("scan")
+	err = f.Event("scan")
 	if err != nil {
 		fmt.Println(err)
 	}

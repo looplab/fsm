@@ -19,7 +19,8 @@ func NewDoor(to string) *Door {
 		To: to,
 	}
 
-	d.FSM = fsm.New(
+	var err error
+	d.FSM, err = fsm.New(
 		"closed",
 		fsm.Transistions[string, string]{
 			{Event: "open", Src: []string{"closed"}, Dst: "open"},
@@ -31,7 +32,9 @@ func NewDoor(to string) *Door {
 			},
 		},
 	)
-
+	if err != nil {
+		fmt.Println(err)
+	}
 	return d
 }
 

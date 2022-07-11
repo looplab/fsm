@@ -7,7 +7,7 @@ import (
 )
 
 func TestGraphvizOutput(t *testing.T) {
-	fsmUnderTest := New(
+	fsmUnderTest, err := New(
 		"closed",
 		Transitions[string, string]{
 			{Event: "open", Src: []string{"closed"}, Dst: "open"},
@@ -16,7 +16,9 @@ func TestGraphvizOutput(t *testing.T) {
 		},
 		Callbacks[string, string]{},
 	)
-
+	if err != nil {
+		t.Errorf("constructor failed:%s", err)
+	}
 	got := Visualize(fsmUnderTest)
 	wanted := `
 digraph fsm {

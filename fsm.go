@@ -97,7 +97,7 @@ type Transitions[E constraints.Ordered, S constraints.Ordered] []Transition[E, S
 // and a slice of source states, the destination state and the callback function.
 //
 // Callbacks are added as a slice specified as Callbacks and called in the same order.
-func New[E constraints.Ordered, S constraints.Ordered](initial S, transitions Transitions[E, S], callbacks Callbacks[E, S]) *FSM[E, S] {
+func New[E constraints.Ordered, S constraints.Ordered](initial S, transitions Transitions[E, S], callbacks Callbacks[E, S]) (*FSM[E, S], error) {
 	f := &FSM[E, S]{
 		current:      initial,
 		transitioner: &defaultTransitioner[E, S]{},
@@ -113,7 +113,8 @@ func New[E constraints.Ordered, S constraints.Ordered](initial S, transitions Tr
 			f.transitions[eKey[E, S]{e.Event, src}] = e.Dst
 		}
 	}
-	return f
+	err := callbacks.validate()
+	return f, err
 }
 
 // Current returns the current state of the FSM.

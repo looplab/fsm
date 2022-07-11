@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	fsm := fsm.New(
+	fsm, err := fsm.New(
 		"closed",
 		fsm.Transistions[string, string]{
 			{Event: "open", Src: []string{"closed"}, Dst: "open"},
@@ -18,10 +18,12 @@ func main() {
 		},
 		fsm.Callbacks[string, string]{},
 	)
-
+	if err != nil {
+		fmt.Println(err)
+	}
 	fmt.Println(fsm.Current())
 
-	err := fsm.Event("open")
+	err = fsm.Event("open")
 	if err != nil {
 		fmt.Println(err)
 	}

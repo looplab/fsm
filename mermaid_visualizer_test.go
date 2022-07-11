@@ -7,7 +7,7 @@ import (
 )
 
 func TestMermaidOutput(t *testing.T) {
-	fsmUnderTest := New(
+	fsmUnderTest, err := New(
 		"closed",
 		Transitions[string, string]{
 			{Event: "open", Src: []string{"closed"}, Dst: "open"},
@@ -16,7 +16,9 @@ func TestMermaidOutput(t *testing.T) {
 		},
 		Callbacks[string, string]{},
 	)
-
+	if err != nil {
+		t.Errorf("constructor failed:%s", err)
+	}
 	got, err := VisualizeForMermaidWithGraphType(fsmUnderTest, StateDiagram)
 	if err != nil {
 		t.Errorf("got error for visualizing with type MERMAID: %s", err)
@@ -38,7 +40,7 @@ stateDiagram-v2
 }
 
 func TestMermaidFlowChartOutput(t *testing.T) {
-	fsmUnderTest := New(
+	fsmUnderTest, err := New(
 		"closed",
 		Transitions[string, string]{
 			{Event: "open", Src: []string{"closed"}, Dst: "open"},
@@ -49,7 +51,9 @@ func TestMermaidFlowChartOutput(t *testing.T) {
 		},
 		Callbacks[string, string]{},
 	)
-
+	if err != nil {
+		t.Errorf("constructor failed:%s", err)
+	}
 	got, err := VisualizeForMermaidWithGraphType(fsmUnderTest, FlowChart)
 	if err != nil {
 		t.Errorf("got error for visualizing with type MERMAID: %s", err)

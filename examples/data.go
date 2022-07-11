@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	fsm := fsm.New(
+	fsm, err := fsm.New(
 		"idle",
 		fsm.Transistions[string, string]{
 			{Event: "produce", Src: []string{"idle"}, Dst: "idle"},
@@ -33,10 +33,12 @@ func main() {
 			},
 		},
 	)
-
+	if err != nil {
+		fmt.Println(err)
+	}
 	fmt.Println(fsm.Current())
 
-	err := fsm.Event("produce")
+	err = fsm.Event("produce")
 	if err != nil {
 		fmt.Println(err)
 	}

@@ -15,29 +15,31 @@
 package fsm
 
 import (
+	"fmt"
+
 	"golang.org/x/exp/constraints"
 )
 
 // CallbackType defines at which type of Event this callback should be called.
-type CallbackType int
+type CallbackType string
 
 const (
 	// BeforeEvent called before event E
-	BeforeEvent CallbackType = iota
+	BeforeEvent = CallbackType("before_event")
 	// BeforeAllEvents called before all events
-	BeforeAllEvents
+	BeforeAllEvents = CallbackType("before_all_events")
 	// AfterEvent called after event E
-	AfterEvent
+	AfterEvent = CallbackType("after_event")
 	// AfterAllEvents called after all events
-	AfterAllEvents
+	AfterAllEvents = CallbackType("after_all_events")
 	// EnterState called after entering state S
-	EnterState
+	EnterState = CallbackType("enter_state")
 	// EnterAllStates called after entering all states
-	EnterAllStates
+	EnterAllStates = CallbackType("enter_all_states")
 	// LeaveState is called before leaving state S.
-	LeaveState
+	LeaveState = CallbackType("leave_state")
 	// LeaveAllStates is called before leaving all states.
-	LeaveAllStates
+	LeaveAllStates = CallbackType("leave_all_states")
 )
 
 // Callback defines a condition when the callback function F should be called in certain conditions.
@@ -96,4 +98,48 @@ func (ctx *CallbackContext[E, S]) Cancel(err ...error) {
 // call the other callbacks.
 func (ctx *CallbackContext[E, S]) Async() {
 	ctx.async = true
+}
+func (cs Callbacks[E, S]) validate() error {
+	for i := range cs {
+		cb := cs[i]
+		err := cb.validate()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (c *Callback[E, S]) validate() error {
+	var (
+		zeroEvent E
+		zeroState S
+	)
+	switch c.When {
+	case BeforeEvent, AfterEvent:
+		if c.Event == zeroEvent {
+			return fmt.Errorf("%v given but no event", c.When)
+		}
+		if c.State != zeroState {
+			return fmt.Errorf("%v given but state %v specified", c.When, c.State)
+		}
+	case BeforeAllEvents, AfterAllEvents:
+		if c.Event != zeroEvent {
+			return fmt.Errorf("%v given with event %v", c.When, c.Event)
+		}
+	case EnterState, LeaveState:
+		if c.State == zeroState {
+			return fmt.Errorf("%v given but no state", c.When)
+		}
+		if c.Event != zeroEvent {
+			return fmt.Errorf("%v given but event %v specified", c.When, c.Event)
+		}
+	case EnterAllStates, LeaveAllStates:
+		if c.State != zeroState {
+			return fmt.Errorf("%v given with state %v", c.When, c.State)
+		}
+	default:
+		return fmt.Errorf("invalid callback:%v", c)
+	}
+	return nil
 }

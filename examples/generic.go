@@ -22,7 +22,7 @@ const (
 )
 
 func main() {
-	fsm := fsm.New(
+	fsm, err := fsm.New(
 		IsClosed,
 		fsm.Transitions[MyEvent, MyState]{
 			{Event: Open, Src: []MyState{IsClosed}, Dst: IsOpen},
@@ -36,15 +36,20 @@ func main() {
 				},
 			},
 			fsm.Callback[MyEvent, MyState]{
-				When: fsm.AfterAllEvents,
+				When:  fsm.BeforeEvent,
+				Event: Open,
+
 				F: func(cr *fsm.CallbackContext[MyEvent, MyState]) {
 					fmt.Printf("callback after all: event:%s src:%s dst:%s\n", cr.Event, cr.Src, cr.Dst)
 				},
 			},
 		},
 	)
+	if err != nil {
+		fmt.Println(err)
+	}
 	fmt.Println(fsm.Current())
-	err := fsm.Event(Open)
+	err = fsm.Event(Open)
 	if err != nil {
 		fmt.Println(err)
 	}
