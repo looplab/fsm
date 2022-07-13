@@ -24,7 +24,7 @@ package main
 
 import (
     "fmt"
-    "github.com/looplab/fsm"
+    "github.com/looplab/fsm/v2"
 )
 
 func main() {
@@ -64,7 +64,7 @@ package main
 
 import (
     "fmt"
-    "github.com/looplab/fsm"
+    "github.com/looplab/fsm/v2"
 )
 
 type Door struct {

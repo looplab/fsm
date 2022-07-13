@@ -1,4 +1,4 @@
-module github.com/looplab/fsm
+module github.com/looplab/fsm/v2
 
 go 1.18
 
