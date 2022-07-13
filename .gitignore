@@ -29,5 +29,6 @@ _testmain.go
 
 # Testing
 .coverprofile
+coverage.out
 
 .vscode

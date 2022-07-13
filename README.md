@@ -24,17 +24,17 @@ package main
 
 import (
     "fmt"
-    "github.com/looplab/fsm"
+    "github.com/looplab/fsm/v2"
 )
 
 func main() {
-    fsm := fsm.NewFSM(
+    fsm := fsm.New[string, string](
         "closed",
-        fsm.Events{
+        fsm.Events[string, string]{
             {Name: "open", Src: []string{"closed"}, Dst: "open"},
             {Name: "close", Src: []string{"open"}, Dst: "closed"},
         },
-        fsm.Callbacks{},
+        fsm.Callbacks[string, string]{},
     )
 
     fmt.Println(fsm.Current())
@@ -64,7 +64,7 @@ package main
 
 import (
     "fmt"
-    "github.com/looplab/fsm"
+    "github.com/looplab/fsm/v2"
 )
 
 type Door struct {
@@ -77,14 +77,19 @@ func NewDoor(to string) *Door {
         To: to,
     }
 
-    d.FSM = fsm.NewFSM(
+    d.FSM = fsm.New[string, string](
         "closed",
-        fsm.Events{
+        fsm.Events[string, string]{
             {Name: "open", Src: []string{"closed"}, Dst: "open"},
             {Name: "close", Src: []string{"open"}, Dst: "closed"},
         },
-        fsm.Callbacks{
-            "enter_state": func(e *fsm.Event) { d.enterState(e) },
+        fsm.Callbacks[string, string]{
+            fsm.Callback[string, string]{
+                When: fsm.AfterAllStates,
+                F: func(cr *fsm.CallbackContext[MyEvent, MyState]) {
+                    d.enterState(e)
+                },
+            },
         },
     )
 

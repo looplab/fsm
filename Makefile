@@ -2,7 +2,7 @@ default: services test
 
 .PHONY: test
 test:
-	go test ./...
+	CGO_ENABLED=1 go test -benchmem -bench=. -v ./... -race -coverprofile=coverage.out -covermode=atomic && go tool cover -func=coverage.out
 
 .PHONY: lint
 lint:

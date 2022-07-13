@@ -1,15 +1,17 @@
+//go:build ignore
 // +build ignore
 
 package main
 
 import (
 	"fmt"
-	"github.com/looplab/fsm"
+
+	"github.com/looplab/fsm/v2"
 )
 
 type Door struct {
 	To  string
-	FSM *fsm.FSM
+	FSM *fsm.FSM[string, string]
 }
 
 func NewDoor(to string) *Door {
@@ -17,21 +19,26 @@ func NewDoor(to string) *Door {
 		To: to,
 	}
 
-	d.FSM = fsm.NewFSM(
+	var err error
+	d.FSM, err = fsm.New(
 		"closed",
-		fsm.Events{
-			{Name: "open", Src: []string{"closed"}, Dst: "open"},
-			{Name: "close", Src: []string{"open"}, Dst: "closed"},
+		fsm.Transistions[string, string]{
+			{Event: "open", Src: []string{"closed"}, Dst: "open"},
+			{Event: "close", Src: []string{"open"}, Dst: "closed"},
 		},
-		fsm.Callbacks{
-			"enter_state": func(e *fsm.Event) { d.enterState(e) },
+		fsm.Callbacks[string, string]{
+			fsm.Callback[string, string]{When: fsm.EnterAllStates,
+				F: func(e *fsm.CallbackContext[string, string]) { d.enterState(e) },
+			},
 		},
 	)
-
+	if err != nil {
+		fmt.Println(err)
+	}
 	return d
 }
 
-func (d *Door) enterState(e *fsm.Event) {
+func (d *Door) enterState(e *fsm.CallbackContext[string, string]) {
 	fmt.Printf("The door to %s is %s\n", d.To, e.Dst)
 }
 

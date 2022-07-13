@@ -1,3 +1,4 @@
+//go:build ignore
 // +build ignore
 
 package main
@@ -5,34 +6,39 @@ package main
 import (
 	"fmt"
 
-	"github.com/looplab/fsm"
+	"github.com/looplab/fsm/v2"
 )
 
 func main() {
-	fsm := fsm.NewFSM(
+	fsm, err := fsm.New(
 		"idle",
-		fsm.Events{
-			{Name: "produce", Src: []string{"idle"}, Dst: "idle"},
-			{Name: "consume", Src: []string{"idle"}, Dst: "idle"},
+		fsm.Transistions[string, string]{
+			{Event: "produce", Src: []string{"idle"}, Dst: "idle"},
+			{Event: "consume", Src: []string{"idle"}, Dst: "idle"},
 		},
-		fsm.Callbacks{
-			"produce": func(e *fsm.Event) {
-				e.FSM.SetMetadata("message", "hii")
-				fmt.Println("produced data")
+		fsm.Callbacks[string, string]{
+			fsm.Callback[string, string]{When: fsm.BeforeEvent, Event: "sproduce",
+				F: func(e *fsm.CallbackContext[string, string]) {
+					e.FSM.SetMetadata("message", "hii")
+					fmt.Println("produced data")
+				},
 			},
-			"consume": func(e *fsm.Event) {
-				message, ok := e.FSM.Metadata("message")
-				if ok {
-					fmt.Println("message = " + message.(string))
-				}
-
+			fsm.Callback[string, string]{When: fsm.BeforeEvent, Event: "consume",
+				F: func(e *fsm.CallbackContext[string, string]) {
+					message, ok := e.FSM.Metadata("message")
+					if ok {
+						fmt.Println("message = " + message.(string))
+					}
+				},
 			},
 		},
 	)
-
+	if err != nil {
+		fmt.Println(err)
+	}
 	fmt.Println(fsm.Current())
 
-	err := fsm.Event("produce")
+	err = fsm.Event("produce")
 	if err != nil {
 		fmt.Println(err)
 	}

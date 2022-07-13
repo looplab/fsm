@@ -7,16 +7,18 @@ import (
 )
 
 func TestMermaidOutput(t *testing.T) {
-	fsmUnderTest := NewFSM(
+	fsmUnderTest, err := New(
 		"closed",
-		Events{
-			{Name: "open", Src: []string{"closed"}, Dst: "open"},
-			{Name: "close", Src: []string{"open"}, Dst: "closed"},
-			{Name: "part-close", Src: []string{"intermediate"}, Dst: "closed"},
+		Transitions[string, string]{
+			{Event: "open", Src: []string{"closed"}, Dst: "open"},
+			{Event: "close", Src: []string{"open"}, Dst: "closed"},
+			{Event: "part-close", Src: []string{"intermediate"}, Dst: "closed"},
 		},
-		Callbacks{},
+		Callbacks[string, string]{},
 	)
-
+	if err != nil {
+		t.Errorf("constructor failed:%s", err)
+	}
 	got, err := VisualizeForMermaidWithGraphType(fsmUnderTest, StateDiagram)
 	if err != nil {
 		t.Errorf("got error for visualizing with type MERMAID: %s", err)
@@ -38,18 +40,20 @@ stateDiagram-v2
 }
 
 func TestMermaidFlowChartOutput(t *testing.T) {
-	fsmUnderTest := NewFSM(
+	fsmUnderTest, err := New(
 		"closed",
-		Events{
-			{Name: "open", Src: []string{"closed"}, Dst: "open"},
-			{Name: "part-open", Src: []string{"closed"}, Dst: "intermediate"},
-			{Name: "part-open", Src: []string{"intermediate"}, Dst: "open"},
-			{Name: "close", Src: []string{"open"}, Dst: "closed"},
-			{Name: "part-close", Src: []string{"intermediate"}, Dst: "closed"},
+		Transitions[string, string]{
+			{Event: "open", Src: []string{"closed"}, Dst: "open"},
+			{Event: "part-open", Src: []string{"closed"}, Dst: "intermediate"},
+			{Event: "part-open", Src: []string{"intermediate"}, Dst: "open"},
+			{Event: "close", Src: []string{"open"}, Dst: "closed"},
+			{Event: "part-close", Src: []string{"intermediate"}, Dst: "closed"},
 		},
-		Callbacks{},
+		Callbacks[string, string]{},
 	)
-
+	if err != nil {
+		t.Errorf("constructor failed:%s", err)
+	}
 	got, err := VisualizeForMermaidWithGraphType(fsmUnderTest, FlowChart)
 	if err != nil {
 		t.Errorf("got error for visualizing with type MERMAID: %s", err)

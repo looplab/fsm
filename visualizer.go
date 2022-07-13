@@ -3,6 +3,9 @@ package fsm
 import (
 	"fmt"
 	"sort"
+
+	"golang.org/x/exp/constraints"
+	"golang.org/x/exp/slices"
 )
 
 // VisualizeType the type of the visualization
@@ -21,7 +24,7 @@ const (
 
 // VisualizeWithType outputs a visualization of a FSM in the desired format.
 // If the type is not given it defaults to GRAPHVIZ
-func VisualizeWithType(fsm *FSM, visualizeType VisualizeType) (string, error) {
+func VisualizeWithType[E constraints.Ordered, S constraints.Ordered](fsm *FSM[E, S], visualizeType VisualizeType) (string, error) {
 	switch visualizeType {
 	case GRAPHVIZ:
 		return Visualize(fsm), nil
@@ -36,9 +39,9 @@ func VisualizeWithType(fsm *FSM, visualizeType VisualizeType) (string, error) {
 	}
 }
 
-func getSortedTransitionKeys(transitions map[eKey]string) []eKey {
+func getSortedTransitionKeys[E constraints.Ordered, S constraints.Ordered](transitions map[eKey[E, S]]S) []eKey[E, S] {
 	// we sort the key alphabetically to have a reproducible graph output
-	sortedTransitionKeys := make([]eKey, 0)
+	sortedTransitionKeys := make([]eKey[E, S], 0)
 
 	for transition := range transitions {
 		sortedTransitionKeys = append(sortedTransitionKeys, transition)
@@ -53,8 +56,8 @@ func getSortedTransitionKeys(transitions map[eKey]string) []eKey {
 	return sortedTransitionKeys
 }
 
-func getSortedStates(transitions map[eKey]string) ([]string, map[string]string) {
-	statesToIDMap := make(map[string]string)
+func getSortedStates[E constraints.Ordered, S constraints.Ordered](transitions map[eKey[E, S]]S) ([]S, map[S]string) {
+	statesToIDMap := make(map[S]string)
 	for transition, target := range transitions {
 		if _, ok := statesToIDMap[transition.src]; !ok {
 			statesToIDMap[transition.src] = ""
@@ -64,11 +67,12 @@ func getSortedStates(transitions map[eKey]string) ([]string, map[string]string) 
 		}
 	}
 
-	sortedStates := make([]string, 0, len(statesToIDMap))
+	sortedStates := make([]S, 0, len(statesToIDMap))
 	for state := range statesToIDMap {
 		sortedStates = append(sortedStates, state)
 	}
-	sort.Strings(sortedStates)
+
+	slices.Sort(sortedStates)
 
 	for i, state := range sortedStates {
 		statesToIDMap[state] = fmt.Sprintf("id%d", i)

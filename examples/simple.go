@@ -1,25 +1,29 @@
+//go:build ignore
 // +build ignore
 
 package main
 
 import (
 	"fmt"
-	"github.com/looplab/fsm"
+
+	"github.com/looplab/fsm/v2"
 )
 
 func main() {
-	fsm := fsm.NewFSM(
+	fsm, err := fsm.New(
 		"closed",
-		fsm.Events{
-			{Name: "open", Src: []string{"closed"}, Dst: "open"},
-			{Name: "close", Src: []string{"open"}, Dst: "closed"},
+		fsm.Transistions[string, string]{
+			{Event: "open", Src: []string{"closed"}, Dst: "open"},
+			{Event: "close", Src: []string{"open"}, Dst: "closed"},
 		},
-		fsm.Callbacks{},
+		fsm.Callbacks[string, string]{},
 	)
-
+	if err != nil {
+		fmt.Println(err)
+	}
 	fmt.Println(fsm.Current())
 
-	err := fsm.Event("open")
+	err = fsm.Event("open")
 	if err != nil {
 		fmt.Println(err)
 	}
