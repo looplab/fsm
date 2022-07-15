@@ -24,7 +24,7 @@ digraph fsm {
     "intermediate" -> "closed" [ label = "part-close" ];
     "open" -> "closed" [ label = "close" ];
 
-    "closed";
+    "closed" [color = "red"];
     "intermediate";
     "open";
 }`
