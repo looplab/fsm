@@ -1,9 +1,12 @@
+//go:build ignore
 // +build ignore
 
 package main
 
 import (
+	"context"
 	"fmt"
+
 	"github.com/looplab/fsm"
 )
 
@@ -24,7 +27,7 @@ func NewDoor(to string) *Door {
 			{Name: "close", Src: []string{"open"}, Dst: "closed"},
 		},
 		fsm.Callbacks{
-			"enter_state": func(e *fsm.Event) { d.enterState(e) },
+			"enter_state": func(_ context.Context, e *fsm.Event) { d.enterState(e) },
 		},
 	)
 
@@ -38,12 +41,12 @@ func (d *Door) enterState(e *fsm.Event) {
 func main() {
 	door := NewDoor("heaven")
 
-	err := door.FSM.Event("open")
+	err := door.FSM.Event(context.Background(), "open")
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	err = door.FSM.Event("close")
+	err = door.FSM.Event(context.Background(), "close")
 	if err != nil {
 		fmt.Println(err)
 	}
