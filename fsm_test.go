@@ -62,6 +62,45 @@ func TestSetState(t *testing.T) {
 	}
 }
 
+func TestNewFSMFromTemplate(t *testing.T) {
+	template := `
+
+  1=New
+2 = Ready
+  3=        Waiting
+4=Running
+5=Terminated
+Admitted:1->2
+Dispatch:2 -> 4
+Interrupt:4->2
+InputOutputoreventwait:4->3
+InputOutputoreventcompletion:3->2
+Exit:4->5
+`
+
+	m, err := NewFSMFromTemplate("New", template, map[string]Callback{})
+	if err != nil {
+		t.Fail()
+	}
+	ctx := context.Background()
+	i := 0
+	for {
+		i++
+		actions := m.AvailableTransitions()
+		fmt.Println(actions)
+		if len(actions) == 0 {
+			break
+		}
+		m.Event(ctx, actions[0])
+		fmt.Println(actions[0])
+
+	}
+	if i < 3 {
+		t.Fail()
+	}
+
+}
+
 func TestBadTransition(t *testing.T) {
 	fsm := NewFSM(
 		"start",
