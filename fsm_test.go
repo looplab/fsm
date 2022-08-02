@@ -70,7 +70,7 @@ func TestNewFSMFromTemplate(t *testing.T) {
   3=        Waiting
 4=Running
 5=Terminated
-Admitted:1->2
+Admitted: 1 -> 2
 Dispatch:2 -> 4
 Interrupt:4->2
 InputOutputoreventwait:4->3
