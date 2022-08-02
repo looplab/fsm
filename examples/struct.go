@@ -7,7 +7,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/looplab/fsm"
+	"github.com/sjqzhang/fsm"
 )
 
 type Door struct {
