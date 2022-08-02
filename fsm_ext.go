@@ -39,7 +39,7 @@ func parseFSM(tpl string, action, from string, to string) []map[string]interface
 		}
 	}
 	for _, line := range lines {
-		matchers := regexp.MustCompile(`(?P<action>[\s\S]+):(?P<from>[\s\S]+?)\s*->\s*(?P<to>[\s\S]+)`).FindStringSubmatch(line)
+		matchers := regexp.MustCompile(`(?P<action>[\s\S]+)[:：](?P<from>[\s\S]+?)\s*(?:->|→|—》)\s*(?P<to>[\s\S]+)`).FindStringSubmatch(line)
 		if len(matchers) != 4 {
 			continue
 		}

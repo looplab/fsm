@@ -83,7 +83,6 @@ Exit:4->5
 		t.Fail()
 	}
 	ctx := context.Background()
-	m.SetState("Exit")
 	i := 0
 	for {
 		i++
@@ -99,7 +98,7 @@ Exit:4->5
 	if i < 3 {
 		t.Fail()
 	}
-	fmt.Println(m.AvailableTransitions())
+	fmt.Println(Visualize(m))
 
 }
 
