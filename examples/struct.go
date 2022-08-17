@@ -1,6 +1,5 @@
 //go:build ignore
-// +build ignore
-
+//+build ignore
 package main
 
 import (
@@ -28,8 +27,19 @@ func NewDoor(to string) *Door {
 		},
 		fsm.Callbacks{
 			"enter_state": func(_ context.Context, e *fsm.Event) { d.enterState(e) },
+			//"open": func(ctx context.Context, event *fsm.Event) {
+			//	fmt.Println(event.Src,event.Dst)
+			//	fmt.Println("xxxxxxxxxxx")
+			//},
+			//"closed": func(ctx context.Context, event *fsm.Event) {
+			//	fmt.Println(event.Src,event.Dst)
+			//	fmt.Println(event.Event)
+			//	fmt.Println("xxxxxx close")
+			//},
 		},
+
 	)
+
 
 	return d
 }
@@ -40,6 +50,7 @@ func (d *Door) enterState(e *fsm.Event) {
 
 func main() {
 	door := NewDoor("heaven")
+
 
 	err := door.FSM.Event(context.Background(), "open")
 	if err != nil {
