@@ -27,6 +27,7 @@ func NewFSMFromTemplate(initial string, template string, callbacks map[string]Ca
 func parseFSM(tpl string, action, from string, to string) []map[string]interface{} {
 	reg := regexp.MustCompile(`(?m)^\s*//.*?\n|^\s*`)
 	tpl = reg.ReplaceAllString(tpl, "")
+	//fmt.Println(tpl)
 	lines := strings.Split(tpl, "\n")
 	stepMap := make(map[string]string)
 	//actionMap := make(map[string]map[string]string)
@@ -60,4 +61,45 @@ func parseFSM(tpl string, action, from string, to string) []map[string]interface
 
 	}
 	return actions
+}
+
+// GetAllEvents AllEvents
+func (f *FSM) GetAllEvents() map[string]interface{} {
+	events := make(map[string]interface{})
+	for key, _ := range f.transitions {
+		events[key.event] = key.event
+	}
+	return events
+}
+
+// GetAllStates AllStates
+func (f *FSM) GetAllStates() map[string]interface{} {
+	states := make(map[string]interface{})
+	for key, val := range f.transitions {
+		states[key.src] = key.src
+		states[val] = val
+	}
+	return states
+}
+
+// Before get before states
+func (f *FSM) Before(state string) []string {
+	var states []string
+	for src, dest := range f.transitions {
+		if dest == state {
+			states = append(states, src.src)
+		}
+	}
+	return states
+}
+
+// After get after states
+func (f *FSM) After(state string) []string {
+	var states []string
+	for src, dest := range f.transitions {
+		if src.src == state {
+			states = append(states, dest)
+		}
+	}
+	return states
 }

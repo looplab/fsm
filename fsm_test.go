@@ -100,6 +100,11 @@ Exit:4->5
 	}
 	fmt.Println(Visualize(m))
 
+
+	if len(m.GetAllStates())!=5 || len(m.GetAllEvents())!=6 {
+		t.Fail()
+	}
+
 }
 
 func TestBadTransition(t *testing.T) {
