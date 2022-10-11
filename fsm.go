@@ -25,6 +25,7 @@
 package fsm
 
 import (
+	"context"
 	"strings"
 	"sync"
 )
@@ -84,7 +85,7 @@ type EventDesc struct {
 
 // Callback is a function type that callbacks should use. Event is the current
 // event info as the callback happens.
-type Callback func(*Event)
+type Callback func(context.Context, *Event)
 
 // Events is a shorthand for defining the transition map in NewFSM.
 type Events []EventDesc
@@ -236,7 +237,6 @@ func (f *FSM) SetState(state string) {
 	f.stateMu.Lock()
 	defer f.stateMu.Unlock()
 	f.current = state
-	return
 }
 
 // Can returns true if event can occur in the current state.
@@ -299,9 +299,18 @@ func (f *FSM) SetMetadata(key string, dataValue interface{}) {
 //
 // The last error should never occur in this situation and is a sign of an
 // internal bug.
-func (f *FSM) Event(event string, args ...interface{}) error {
+func (f *FSM) Event(ctx context.Context, event string, args ...interface{}) error {
 	f.eventMu.Lock()
-	defer f.eventMu.Unlock()
+	// in order to always unlock the event mutex, the defer is added
+	// in case the state transition goes through and enter/after callbacks
+	// are called; because these must be able to trigger new state
+	// transitions, it is explicitly unlocked in the code below
+	var unlocked bool
+	defer func() {
+		if !unlocked {
+			f.eventMu.Unlock()
+		}
+	}()
 
 	f.stateMu.RLock()
 	defer f.stateMu.RUnlock()
@@ -320,31 +329,63 @@ func (f *FSM) Event(event string, args ...interface{}) error {
 		return UnknownEventError{event}
 	}
 
-	e := &Event{f, event, f.current, dst, nil, args, false, false}
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	e := &Event{f, event, f.current, dst, nil, args, false, false, cancel}
 
-	err := f.beforeEventCallbacks(e)
+	err := f.beforeEventCallbacks(ctx, e)
 	if err != nil {
 		return err
 	}
 
 	if f.current == dst {
-		f.afterEventCallbacks(e)
+		f.afterEventCallbacks(ctx, e)
 		return NoTransitionError{e.Err}
 	}
 
 	// Setup the transition, call it later.
-	f.transition = func() {
-		f.stateMu.Lock()
-		f.current = dst
-		f.stateMu.Unlock()
+	transitionFunc := func(ctx context.Context, async bool) func() {
+		return func() {
+			if ctx.Err() != nil {
+				if e.Err == nil {
+					e.Err = ctx.Err()
+				}
+				return
+			}
 
-		f.enterStateCallbacks(e)
-		f.afterEventCallbacks(e)
+			f.stateMu.Lock()
+			f.current = dst
+			f.stateMu.Unlock()
+
+			// at this point, we unlock the event mutex in order to allow
+			// enter state callbacks to trigger another transition
+			// for aynchronous state transitions this doesn't happen because
+			// the event mutex has already been unlocked
+			if !async {
+				f.eventMu.Unlock()
+				unlocked = true
+			}
+			f.transition = nil // treat the state transition as done
+			f.enterStateCallbacks(ctx, e)
+			f.afterEventCallbacks(ctx, e)
+		}
 	}
 
-	if err = f.leaveStateCallbacks(e); err != nil {
+	f.transition = transitionFunc(ctx, false)
+
+	if err = f.leaveStateCallbacks(ctx, e); err != nil {
 		if _, ok := err.(CanceledError); ok {
 			f.transition = nil
+		} else if asyncError, ok := err.(AsyncError); ok {
+			// setup a new context in order for async state transitions to work correctly
+			// this "uncancels" the original context which ignores its cancelation
+			// but keeps the values of the original context available to callers
+			ctx, cancel := uncancelContext(ctx)
+			e.cancelFunc = cancel
+			asyncError.Ctx = ctx
+			asyncError.CancelTransition = cancel
+			f.transition = transitionFunc(ctx, true)
+			return asyncError
 		}
 		return err
 	}
@@ -398,15 +439,15 @@ func (t transitionerStruct) transition(f *FSM) error {
 
 // beforeEventCallbacks calls the before_ callbacks, first the named then the
 // general version.
-func (f *FSM) beforeEventCallbacks(e *Event) error {
+func (f *FSM) beforeEventCallbacks(ctx context.Context, e *Event) error {
 	if fn, ok := f.callbacks[cKey{e.Event, callbackBeforeEvent}]; ok {
-		fn(e)
+		fn(ctx, e)
 		if e.canceled {
 			return CanceledError{e.Err}
 		}
 	}
 	if fn, ok := f.callbacks[cKey{"", callbackBeforeEvent}]; ok {
-		fn(e)
+		fn(ctx, e)
 		if e.canceled {
 			return CanceledError{e.Err}
 		}
@@ -416,21 +457,21 @@ func (f *FSM) beforeEventCallbacks(e *Event) error {
 
 // leaveStateCallbacks calls the leave_ callbacks, first the named then the
 // general version.
-func (f *FSM) leaveStateCallbacks(e *Event) error {
+func (f *FSM) leaveStateCallbacks(ctx context.Context, e *Event) error {
 	if fn, ok := f.callbacks[cKey{f.current, callbackLeaveState}]; ok {
-		fn(e)
+		fn(ctx, e)
 		if e.canceled {
 			return CanceledError{e.Err}
 		} else if e.async {
-			return AsyncError{e.Err}
+			return AsyncError{Err: e.Err}
 		}
 	}
 	if fn, ok := f.callbacks[cKey{"", callbackLeaveState}]; ok {
-		fn(e)
+		fn(ctx, e)
 		if e.canceled {
 			return CanceledError{e.Err}
 		} else if e.async {
-			return AsyncError{e.Err}
+			return AsyncError{Err: e.Err}
 		}
 	}
 	return nil
@@ -460,23 +501,23 @@ func (f *FSM) beforeEnterStateCallbacks(e *Event, dst string) error {
 
 // enterStateCallbacks calls the enter_ callbacks, first the named then the
 // general version.
-func (f *FSM) enterStateCallbacks(e *Event) {
+func (f *FSM) enterStateCallbacks(ctx context.Context, e *Event) {
 	if fn, ok := f.callbacks[cKey{f.current, callbackEnterState}]; ok {
-		fn(e)
+		fn(ctx, e)
 	}
 	if fn, ok := f.callbacks[cKey{"", callbackEnterState}]; ok {
-		fn(e)
+		fn(ctx, e)
 	}
 }
 
 // afterEventCallbacks calls the after_ callbacks, first the named then the
 // general version.
-func (f *FSM) afterEventCallbacks(e *Event) {
+func (f *FSM) afterEventCallbacks(ctx context.Context, e *Event) {
 	if fn, ok := f.callbacks[cKey{e.Event, callbackAfterEvent}]; ok {
-		fn(e)
+		fn(ctx, e)
 	}
 	if fn, ok := f.callbacks[cKey{"", callbackAfterEvent}]; ok {
-		fn(e)
+		fn(ctx, e)
 	}
 }
 

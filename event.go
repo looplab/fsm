@@ -39,6 +39,9 @@ type Event struct {
 
 	// async is an internal flag set if the transition should be asynchronous
 	async bool
+
+	// cancelFunc is called in case the event is canceled.
+	cancelFunc func()
 }
 
 // Cancel can be called in before_<EVENT> or leave_<STATE> to cancel the
@@ -46,6 +49,7 @@ type Event struct {
 // overwrite e.Err if set before.
 func (e *Event) Cancel(err ...error) {
 	e.canceled = true
+	e.cancelFunc()
 
 	if len(err) > 0 {
 		e.Err = err[0]
