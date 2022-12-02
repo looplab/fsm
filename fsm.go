@@ -21,7 +21,6 @@
 //
 // Fysom for Python
 // https://github.com/oxplot/fysom (forked at https://github.com/mriehl/fysom)
-//
 package fsm
 
 import (
@@ -268,6 +267,13 @@ func (f *FSM) SetMetadata(key string, dataValue interface{}) {
 	f.metadataMu.Lock()
 	defer f.metadataMu.Unlock()
 	f.metadata[key] = dataValue
+}
+
+// DeleteMetadata deletes the dataValue in metadata by key
+func (f *FSM) DeleteMetadata(key string) {
+	f.metadataMu.Lock()
+	delete(f.metadata, key)
+	f.metadataMu.Unlock()
 }
 
 // Event initiates a state transition with the named event.
