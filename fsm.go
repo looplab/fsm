@@ -349,9 +349,8 @@ func (f *FSM) Event(ctx context.Context, event string, args ...interface{}) erro
 
 			f.stateMu.Lock()
 			f.current = dst
-			f.stateMu.Unlock()
-
 			f.transition = nil // treat the state transition as done
+			f.stateMu.Unlock()
 
 			// at this point, we unlock the event mutex in order to allow
 			// enter state callbacks to trigger another transition
