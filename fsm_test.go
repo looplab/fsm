@@ -544,19 +544,16 @@ func TestCancelAsyncTransition(t *testing.T) {
 	if !ok {
 		t.Errorf("expected error to be 'AsyncError', got %v", err)
 	}
-	var asyncStateTransitionWasCanceled bool
+	var asyncStateTransitionWasCanceled = make(chan struct{})
 	go func() {
 		<-asyncError.Ctx.Done()
-		asyncStateTransitionWasCanceled = true
+		close(asyncStateTransitionWasCanceled)
 	}()
 	asyncError.CancelTransition()
-	time.Sleep(20 * time.Millisecond)
+	<-asyncStateTransitionWasCanceled
 
 	if err = fsm.Transition(); err != nil {
 		t.Errorf("expected no error, got %v", err)
-	}
-	if !asyncStateTransitionWasCanceled {
-		t.Error("expected async state transition cancelation to have propagated")
 	}
 	if fsm.Current() != "start" {
 		t.Error("expected state to be 'start'")
@@ -775,7 +772,7 @@ func TestTransitionInCallbacks(t *testing.T) {
 
 func TestContextInCallbacks(t *testing.T) {
 	var fsm *FSM
-	var enterEndAsyncWorkDone bool
+	var enterEndAsyncWorkDone = make(chan struct{})
 	fsm = NewFSM(
 		"start",
 		Events{
@@ -787,7 +784,7 @@ func TestContextInCallbacks(t *testing.T) {
 			"enter_end": func(ctx context.Context, e *Event) {
 				go func() {
 					<-ctx.Done()
-					enterEndAsyncWorkDone = true
+					close(enterEndAsyncWorkDone)
 				}()
 
 				<-ctx.Done()
@@ -806,11 +803,7 @@ func TestContextInCallbacks(t *testing.T) {
 	if !errors.Is(err, context.Canceled) {
 		t.Errorf("expected 'context canceled' error, got %v", err)
 	}
-	time.Sleep(20 * time.Millisecond)
-
-	if !enterEndAsyncWorkDone {
-		t.Error("expected asynchronous work in callback to be done but it wasn't")
-	}
+	<-enterEndAsyncWorkDone
 
 	currentState := fsm.Current()
 	if currentState != "end" {

@@ -349,6 +349,7 @@ func (f *FSM) Event(ctx context.Context, event string, args ...interface{}) erro
 
 			f.stateMu.Lock()
 			f.current = dst
+			f.transition = nil // treat the state transition as done
 			f.stateMu.Unlock()
 
 			// at this point, we unlock the event mutex in order to allow
@@ -359,7 +360,6 @@ func (f *FSM) Event(ctx context.Context, event string, args ...interface{}) erro
 				f.eventMu.Unlock()
 				unlocked = true
 			}
-			f.transition = nil // treat the state transition as done
 			f.enterStateCallbacks(ctx, e)
 			f.afterEventCallbacks(ctx, e)
 		}
@@ -420,7 +420,6 @@ func (t transitionerStruct) transition(f *FSM) error {
 		return NotInTransitionError{}
 	}
 	f.transition()
-	f.transition = nil
 	return nil
 }
 
