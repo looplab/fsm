@@ -333,6 +333,8 @@ func (f *FSM) Event(ctx context.Context, event string, args ...interface{}) erro
 	}
 
 	if f.current == dst {
+		f.stateMu.RUnlock()
+		defer f.stateMu.RLock()
 		f.eventMu.Unlock()
 		unlocked = true
 		f.afterEventCallbacks(ctx, e)
