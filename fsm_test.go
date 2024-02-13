@@ -825,6 +825,31 @@ func TestNoTransition(t *testing.T) {
 	}
 }
 
+func TestNoTransitionAfterEventCallbackTransition(t *testing.T) {
+	var fsm *FSM
+	fsm = NewFSM(
+		"start",
+		Events{
+			{Name: "run", Src: []string{"start"}, Dst: "start"},
+			{Name: "finish", Src: []string{"start"}, Dst: "finished"},
+		},
+		Callbacks{
+			"after_event": func(_ context.Context, e *Event) {
+				fsm.Event(context.Background(), "finish")
+			},
+		},
+	)
+	err := fsm.Event(context.Background(), "run")
+	if _, ok := err.(NoTransitionError); !ok {
+		t.Error("expected 'NoTransitionError'")
+	}
+
+	currentState := fsm.Current()
+	if currentState != "finished" {
+		t.Errorf("expected state to be 'finished', was '%s'", currentState)
+	}
+}
+
 func ExampleNewFSM() {
 	fsm := NewFSM(
 		"green",
