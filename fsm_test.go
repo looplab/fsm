@@ -39,9 +39,31 @@ func TestSameState(t *testing.T) {
 		},
 		Callbacks{},
 	)
-	_ = fsm.Event(context.Background(), "run")
+	err := fsm.Event(context.Background(), "run")
 	if fsm.Current() != "start" {
 		t.Error("expected state to be 'start'")
+	}
+	if err == nil {
+		t.Error("expected no transition error")
+	}
+}
+
+func TestSameStateWithProcessNoTransitionStatesEnabled(t *testing.T) {
+	fsm := NewFSM(
+		"start",
+		Events{
+			{Name: "run", Src: []string{"start"}, Dst: "start"},
+		},
+		Callbacks{},
+	)
+	fsm.SetProcessNoTransitionStates(true)
+	err := fsm.Event(context.Background(), "run")
+	if fsm.Current() != "start" {
+		t.Error("expected state to be 'start'")
+	}
+
+	if err != nil {
+		t.Error("expected no errors")
 	}
 }
 
