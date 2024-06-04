@@ -62,6 +62,10 @@ type FSM struct {
 	metadata map[string]interface{}
 
 	metadataMu sync.RWMutex
+
+	// processNoTransitionStates is used to allow events with no transitions 
+	// to be performed
+	processNoTransitionStates bool
 }
 
 // EventDesc represents an event when initializing the FSM.
@@ -135,6 +139,7 @@ func NewFSM(initial string, events []EventDesc, callbacks map[string]Callback) *
 		transitions:     make(map[eKey]string),
 		callbacks:       make(map[cKey]Callback),
 		metadata:        make(map[string]interface{}),
+		processNoTransitionStates: false,
 	}
 
 	// Build transition map and store sets of all events and states.
@@ -276,6 +281,12 @@ func (f *FSM) DeleteMetadata(key string) {
 	f.metadataMu.Unlock()
 }
 
+// SetProcessNoTransitionStates allow the users to enable events with no transitions
+// to be performed
+func (f *FSM) SetProcessNoTransitionStates(process bool) {
+	f.processNoTransitionStates = process
+}
+
 // Event initiates a state transition with the named event.
 //
 // The call takes a variable number of arguments that will be passed to the
@@ -332,7 +343,7 @@ func (f *FSM) Event(ctx context.Context, event string, args ...interface{}) erro
 		return err
 	}
 
-	if f.current == dst {
+	if f.current == dst && !f.processNoTransitionStates {
 		f.stateMu.RUnlock()
 		defer f.stateMu.RLock()
 		f.eventMu.Unlock()
