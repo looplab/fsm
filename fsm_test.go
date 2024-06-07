@@ -1038,3 +1038,31 @@ func ExampleFSM_Transition() {
 	// closed
 	// open
 }
+
+func TestEventAndCanInGoroutines(t *testing.T) {
+	fsm := NewFSM(
+		"closed",
+		Events{
+			{Name: "open", Src: []string{"closed"}, Dst: "open"},
+			{Name: "close", Src: []string{"open"}, Dst: "closed"},
+		},
+		Callbacks{},
+	)
+	wg := sync.WaitGroup{}
+	for i := 0; i < 10; i++ {
+		wg.Add(2)
+		go func(n int) {
+			defer wg.Done()
+			if n%2 == 0 {
+				_ = fsm.Event(context.Background(), "open")
+			} else {
+				_ = fsm.Event(context.Background(), "close")
+			}
+		}(i)
+		go func() {
+			defer wg.Done()
+			fsm.Can("close")
+		}()
+	}
+	wg.Wait()
+}
