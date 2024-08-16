@@ -16,6 +16,7 @@ package fsm
 
 import (
 	"context"
+	"errors"
 )
 
 // InvalidEventError is returned by FSM.Event() when the event cannot be called
@@ -69,6 +70,15 @@ func (e NoTransitionError) Error() string {
 	return "no transition"
 }
 
+func (e NoTransitionError) Is(target error) bool {
+	_, ok := target.(NoTransitionError)
+	return ok || errors.Is(e.Err, target)
+}
+
+func (e NoTransitionError) Unwrap() error {
+	return e.Err
+}
+
 // CanceledError is returned by FSM.Event() when a callback have canceled a
 // transition.
 type CanceledError struct {
@@ -80,6 +90,15 @@ func (e CanceledError) Error() string {
 		return "transition canceled with error: " + e.Err.Error()
 	}
 	return "transition canceled"
+}
+
+func (e CanceledError) Is(target error) bool {
+	_, ok := target.(CanceledError)
+	return ok || errors.Is(e.Err, target)
+}
+
+func (e CanceledError) Unwrap() error {
+	return e.Err
 }
 
 // AsyncError is returned by FSM.Event() when a callback have initiated an
@@ -96,6 +115,15 @@ func (e AsyncError) Error() string {
 		return "async started with error: " + e.Err.Error()
 	}
 	return "async started"
+}
+
+func (e AsyncError) Is(target error) bool {
+	_, ok := target.(AsyncError)
+	return ok || errors.Is(e.Err, target)
+}
+
+func (e AsyncError) Unwrap() error {
+	return e.Err
 }
 
 // InternalError is returned by FSM.Event() and should never occur. It is a

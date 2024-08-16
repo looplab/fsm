@@ -53,34 +53,70 @@ func TestNotInTransitionError(t *testing.T) {
 
 func TestNoTransitionError(t *testing.T) {
 	e := NoTransitionError{}
+	innerErr := errors.New("no transition")
 	if e.Error() != "no transition" {
 		t.Error("NoTransitionError string mismatch")
 	}
-	e.Err = errors.New("no transition")
+	e.Err = innerErr
 	if e.Error() != "no transition with error: "+e.Err.Error() {
 		t.Error("NoTransitionError string mismatch")
+	}
+
+	realErr := hideErrInterfaceType(e)
+	if !errors.Is(realErr, NoTransitionError{}) {
+		t.Error("NoTransitionError 'Is' broken")
+	}
+	if !errors.Is(realErr, innerErr) {
+		t.Error("NoTransitionError 'Is' broken")
+	}
+	if errors.Unwrap(e) != innerErr {
+		t.Error("NoTransitionError 'Unwrap' broken")
 	}
 }
 
 func TestCanceledError(t *testing.T) {
 	e := CanceledError{}
+	innerErr := errors.New("canceled")
 	if e.Error() != "transition canceled" {
 		t.Error("CanceledError string mismatch")
 	}
-	e.Err = errors.New("canceled")
+	e.Err = innerErr
 	if e.Error() != "transition canceled with error: "+e.Err.Error() {
 		t.Error("CanceledError string mismatch")
+	}
+
+	realErr := hideErrInterfaceType(e)
+	if !errors.Is(realErr, CanceledError{}) {
+		t.Error("CanceledError 'Is' broken")
+	}
+	if !errors.Is(realErr, innerErr) {
+		t.Error("CanceledError 'Is' broken")
+	}
+	if errors.Unwrap(e) != innerErr {
+		t.Error("CanceledError 'Unwrap' broken")
 	}
 }
 
 func TestAsyncError(t *testing.T) {
 	e := AsyncError{}
+	innerErr := errors.New("async")
 	if e.Error() != "async started" {
 		t.Error("AsyncError string mismatch")
 	}
-	e.Err = errors.New("async")
+	e.Err = innerErr
 	if e.Error() != "async started with error: "+e.Err.Error() {
 		t.Error("AsyncError string mismatch")
+	}
+
+	realErr := hideErrInterfaceType(e)
+	if !errors.Is(realErr, AsyncError{}) {
+		t.Error("AsyncError 'Is' broken")
+	}
+	if !errors.Is(realErr, innerErr) {
+		t.Error("AsyncError 'Is' broken")
+	}
+	if errors.Unwrap(e) != innerErr {
+		t.Error("AsyncError 'Unwrap' broken")
 	}
 }
 
@@ -89,4 +125,8 @@ func TestInternalError(t *testing.T) {
 	if e.Error() != "internal error on state transition" {
 		t.Error("InternalError string mismatch")
 	}
+}
+
+func hideErrInterfaceType(err error) error {
+	return err
 }
