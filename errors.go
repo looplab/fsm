@@ -69,6 +69,10 @@ func (e NoTransitionError) Error() string {
 	return "no transition"
 }
 
+func (e NoTransitionError) Unwrap() error {
+	return e.Err
+}
+
 // CanceledError is returned by FSM.Event() when a callback have canceled a
 // transition.
 type CanceledError struct {
@@ -80,6 +84,10 @@ func (e CanceledError) Error() string {
 		return "transition canceled with error: " + e.Err.Error()
 	}
 	return "transition canceled"
+}
+
+func (e CanceledError) Unwrap() error {
+	return e.Err
 }
 
 // AsyncError is returned by FSM.Event() when a callback have initiated an
@@ -96,6 +104,10 @@ func (e AsyncError) Error() string {
 		return "async started with error: " + e.Err.Error()
 	}
 	return "async started"
+}
+
+func (e AsyncError) Unwrap() error {
+	return e.Err
 }
 
 // InternalError is returned by FSM.Event() and should never occur. It is a
