@@ -60,6 +60,12 @@ func TestNoTransitionError(t *testing.T) {
 	if e.Error() != "no transition with error: "+e.Err.Error() {
 		t.Error("NoTransitionError string mismatch")
 	}
+	if e.Unwrap() == nil {
+		t.Error("CanceledError Unwrap() should not be nil")
+	}
+	if !errors.Is(e, e.Err) {
+		t.Error("CanceledError should be equal to its error")
+	}
 }
 
 func TestCanceledError(t *testing.T) {
@@ -71,6 +77,12 @@ func TestCanceledError(t *testing.T) {
 	if e.Error() != "transition canceled with error: "+e.Err.Error() {
 		t.Error("CanceledError string mismatch")
 	}
+	if e.Unwrap() == nil {
+		t.Error("CanceledError Unwrap() should not be nil")
+	}
+	if !errors.Is(e, e.Err) {
+		t.Error("CanceledError should be equal to its error")
+	}
 }
 
 func TestAsyncError(t *testing.T) {
@@ -81,6 +93,12 @@ func TestAsyncError(t *testing.T) {
 	e.Err = errors.New("async")
 	if e.Error() != "async started with error: "+e.Err.Error() {
 		t.Error("AsyncError string mismatch")
+	}
+	if e.Unwrap() == nil {
+		t.Error("AsyncError Unwrap() should not be nil")
+	}
+	if !errors.Is(e, e.Err) {
+		t.Error("AsyncError should be equal to its error")
 	}
 }
 
