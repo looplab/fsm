@@ -36,7 +36,7 @@ type transitioner[E cmp.Ordered, S cmp.Ordered] interface {
 }
 
 // FSM is the state machine that holds the current state.
-// E ist the event
+// E is the event
 // S is the state
 // It has to be created with New to function properly.
 type FSM[E cmp.Ordered, S cmp.Ordered] struct {
@@ -91,7 +91,7 @@ type Transitions[E cmp.Ordered, S cmp.Ordered] []Transition[E, S]
 // New constructs a generic FSM with a initial state S, for events E.
 // E is the event type, S is the state type.
 //
-// Transistions define the state transistions that can be performed for a given event
+// Transitions define the state transitions that can be performed for a given event
 // and a slice of source states, the destination state and the callback function.
 //
 // Callbacks are added as a slice specified as Callbacks and called in the same order.
