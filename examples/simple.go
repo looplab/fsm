@@ -12,7 +12,7 @@ import (
 func main() {
 	fsm, err := fsm.New(
 		"closed",
-		fsm.Transistions[string, string]{
+		fsm.Transitions[string, string]{
 			{Event: "open", Src: []string{"closed"}, Dst: "open"},
 			{Event: "close", Src: []string{"open"}, Dst: "closed"},
 		},

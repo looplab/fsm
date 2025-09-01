@@ -12,7 +12,7 @@ import (
 func main() {
 	f, err := fsm.New(
 		"idle",
-		fsm.Transistions[string, string]{
+		fsm.Transitions[string, string]{
 			{Event: "scan", Src: []string{"idle"}, Dst: "scanning"},
 			{Event: "working", Src: []string{"scanning"}, Dst: "scanning"},
 			{Event: "situation", Src: []string{"scanning"}, Dst: "scanning"},
