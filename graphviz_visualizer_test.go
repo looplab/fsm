@@ -34,7 +34,7 @@ digraph fsm {
 	normalizedWanted := strings.ReplaceAll(wanted, "\n", "")
 	if normalizedGot != normalizedWanted {
 		t.Errorf("build graphivz graph failed. \nwanted \n%s\nand got \n%s\n", wanted, got)
-		fmt.Println([]byte(normalizedGot))
-		fmt.Println([]byte(normalizedWanted))
+		fmt.Println(normalizedGot)
+		fmt.Println(normalizedWanted)
 	}
 }

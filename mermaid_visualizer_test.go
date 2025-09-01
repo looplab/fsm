@@ -34,8 +34,8 @@ stateDiagram-v2
 	normalizedWanted := strings.ReplaceAll(wanted, "\n", "")
 	if normalizedGot != normalizedWanted {
 		t.Errorf("build mermaid graph failed. \nwanted \n%s\nand got \n%s\n", wanted, got)
-		fmt.Println([]byte(normalizedGot))
-		fmt.Println([]byte(normalizedWanted))
+		fmt.Println(normalizedGot)
+		fmt.Println(normalizedWanted)
 	}
 }
 
@@ -76,7 +76,7 @@ graph LR
 	normalizedWanted := strings.ReplaceAll(wanted, "\n", "")
 	if normalizedGot != normalizedWanted {
 		t.Errorf("build mermaid graph failed. \nwanted \n%s\nand got \n%s\n", wanted, got)
-		fmt.Println([]byte(normalizedGot))
-		fmt.Println([]byte(normalizedWanted))
+		fmt.Println(normalizedGot)
+		fmt.Println(normalizedWanted)
 	}
 }

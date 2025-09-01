@@ -15,14 +15,13 @@
 package fsm
 
 import (
+	"cmp"
 	"fmt"
-
-	"golang.org/x/exp/constraints"
 )
 
 // InvalidEventError is returned by FSM.Event() when the event cannot be called
 // in the current state.
-type InvalidEventError[E constraints.Ordered, S constraints.Ordered] struct {
+type InvalidEventError[E cmp.Ordered, S cmp.Ordered] struct {
 	Event E
 	State S
 }

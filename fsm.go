@@ -21,19 +21,17 @@
 //
 // Fysom for Python
 // https://github.com/oxplot/fysom (forked at https://github.com/mriehl/fysom)
-//
 package fsm
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"sync"
-
-	"golang.org/x/exp/constraints"
 )
 
 // transitioner is an interface for the FSM's transition function.
-type transitioner[E constraints.Ordered, S constraints.Ordered] interface {
+type transitioner[E cmp.Ordered, S cmp.Ordered] interface {
 	transition(*FSM[E, S]) error
 }
 
@@ -41,7 +39,7 @@ type transitioner[E constraints.Ordered, S constraints.Ordered] interface {
 // E ist the event
 // S is the state
 // It has to be created with New to function properly.
-type FSM[E constraints.Ordered, S constraints.Ordered] struct {
+type FSM[E cmp.Ordered, S cmp.Ordered] struct {
 	// current is the state that the FSM is currently in.
 	current S
 
@@ -74,7 +72,7 @@ type FSM[E constraints.Ordered, S constraints.Ordered] struct {
 // The event can have one or more source states that is valid for performing
 // the transition. If the FSM is in one of the source states it will end up in
 // the specified destination state, calling all defined callbacks as it goes.
-type Transition[E constraints.Ordered, S constraints.Ordered] struct {
+type Transition[E cmp.Ordered, S cmp.Ordered] struct {
 	// Event is the event used when calling for a transition.
 	Event E
 
@@ -88,7 +86,7 @@ type Transition[E constraints.Ordered, S constraints.Ordered] struct {
 }
 
 // Transitions is a shorthand for defining the transition map in NewFSM.
-type Transitions[E constraints.Ordered, S constraints.Ordered] []Transition[E, S]
+type Transitions[E cmp.Ordered, S cmp.Ordered] []Transition[E, S]
 
 // New constructs a generic FSM with a initial state S, for events E.
 // E is the event type, S is the state type.
@@ -97,7 +95,7 @@ type Transitions[E constraints.Ordered, S constraints.Ordered] []Transition[E, S
 // and a slice of source states, the destination state and the callback function.
 //
 // Callbacks are added as a slice specified as Callbacks and called in the same order.
-func New[E constraints.Ordered, S constraints.Ordered](initial S, transitions Transitions[E, S], callbacks Callbacks[E, S]) (*FSM[E, S], error) {
+func New[E cmp.Ordered, S cmp.Ordered](initial S, transitions Transitions[E, S], callbacks Callbacks[E, S]) (*FSM[E, S], error) {
 	f := &FSM[E, S]{
 		current:      initial,
 		transitioner: &defaultTransitioner[E, S]{},
@@ -284,7 +282,7 @@ func (f *FSM[E, S]) doTransition() error {
 
 // defaultTransitioner is the default implementation of the transitioner
 // interface. Other implementations can be swapped in for testing.
-type defaultTransitioner[E constraints.Ordered, S constraints.Ordered] struct{}
+type defaultTransitioner[E cmp.Ordered, S cmp.Ordered] struct{}
 
 // Transition completes an asynchronous state change.
 //
@@ -378,7 +376,7 @@ func (f *FSM[E, S]) afterEventCallbacks(cc *CallbackContext[E, S]) {
 }
 
 // eKey is a struct key used for storing the transition map.
-type eKey[E constraints.Ordered, S constraints.Ordered] struct {
+type eKey[E cmp.Ordered, S cmp.Ordered] struct {
 	// event is the name of the event that the keys refers to.
 	event E
 

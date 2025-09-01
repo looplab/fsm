@@ -15,16 +15,15 @@
 package fsm
 
 import (
+	"cmp"
 	"fmt"
 	"sort"
 	"sync"
 	"testing"
 	"time"
-
-	"golang.org/x/exp/constraints"
 )
 
-type fakeTransitioner[E constraints.Ordered, S constraints.Ordered] struct {
+type fakeTransitioner[E cmp.Ordered, S cmp.Ordered] struct {
 }
 
 func (t fakeTransitioner[E, S]) transition(f *FSM[E, S]) error {

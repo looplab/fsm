@@ -15,9 +15,8 @@
 package fsm
 
 import (
+	"cmp"
 	"fmt"
-
-	"golang.org/x/exp/constraints"
 )
 
 // CallbackType defines at which type of Event this callback should be called.
@@ -45,8 +44,8 @@ const (
 // Callback defines a condition when the callback function F should be called in certain conditions.
 // The order of execution for CallbackTypes in the same event or state is:
 // The concrete CallbackType has precedence over a general one, e.g.
-// BeforEvent E will be fired before BeforeAllEvents.
-type Callback[E constraints.Ordered, S constraints.Ordered] struct {
+// BeforeEvent E will be fired before BeforeAllEvents.
+type Callback[E cmp.Ordered, S cmp.Ordered] struct {
 	// When should the callback be called.
 	When CallbackType
 	// Event is the event that the callback should be called for. Only relevant for BeforeEvent and AfterEvent.
@@ -58,10 +57,10 @@ type Callback[E constraints.Ordered, S constraints.Ordered] struct {
 }
 
 // Callbacks is a shorthand for defining the callbacks in New.
-type Callbacks[E constraints.Ordered, S constraints.Ordered] []Callback[E, S]
+type Callbacks[E cmp.Ordered, S cmp.Ordered] []Callback[E, S]
 
 // CallbackContext is the info that get passed as a reference in the callbacks.
-type CallbackContext[E constraints.Ordered, S constraints.Ordered] struct {
+type CallbackContext[E cmp.Ordered, S cmp.Ordered] struct {
 	// FSM is an reference to the current FSM.
 	FSM *FSM[E, S]
 	// Event is the event name.
