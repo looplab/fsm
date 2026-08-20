@@ -431,6 +431,43 @@ func TestCancelWithError(t *testing.T) {
 	}
 }
 
+func TestCanceledContextDoesNotLeaveTheFSMInTransition(t *testing.T) {
+	fsm := NewFSM(
+		"start",
+		Events{
+			{Name: "run", Src: []string{"start"}, Dst: "end"},
+		},
+		Callbacks{},
+	)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	err := fsm.Event(ctx, "run")
+	if !errors.Is(err, context.Canceled) {
+		t.Errorf("expected 'context canceled' error, got %v", err)
+	}
+	if fsm.Current() != "start" {
+		t.Errorf("expected state to be 'start', was '%s'", fsm.Current())
+	}
+
+	// A canceled event must not leave the FSM in transition. transitionFunc returns
+	// early when the context is done, and unless it clears f.transition on the way
+	// out, every later event fails with InTransitionError -- permanently, because
+	// Transition() re-runs the same closure and takes the same early return, so only
+	// a newly constructed FSM recovers.
+	//
+	// A state whose leave callback cancels is spared, since leaveStateCallbacks
+	// returning CanceledError does clear the flag. A state with no callbacks, as
+	// here, is not.
+	if err := fsm.Event(context.Background(), "run"); err != nil {
+		t.Errorf("expected the FSM to still accept events, got %v", err)
+	}
+	if fsm.Current() != "end" {
+		t.Errorf("expected state to be 'end', was '%s'", fsm.Current())
+	}
+}
+
 func TestAsyncTransitionGenericState(t *testing.T) {
 	fsm := NewFSM(
 		"start",
