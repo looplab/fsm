@@ -350,6 +350,16 @@ func (f *FSM) Event(ctx context.Context, event string, args ...interface{}) erro
 				if e.Err == nil {
 					e.Err = ctx.Err()
 				}
+				// Clear the transition on the way out, exactly as the completed
+				// path below does. Leaving it set makes every later Event return
+				// InTransitionError, and there is no recovery short of a new FSM:
+				// Transition() re-runs this same closure and takes this same
+				// early return. A state whose leave callback cancels is spared,
+				// because leaveStateCallbacks returning CanceledError clears it;
+				// a state with no callbacks is not.
+				f.stateMu.Lock()
+				f.transition = nil
+				f.stateMu.Unlock()
 				return
 			}
 
