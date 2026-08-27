@@ -114,6 +114,48 @@ func main() {
 }
 ```
 
+# Shared machine definitions
+
+Applications that keep one FSM per managed object can compile the events and
+callbacks once into a `Spec` and share it between all machines, instead of
+building the same transition and callback maps for every machine:
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+
+    "github.com/looplab/fsm"
+)
+
+var doorSpec = fsm.NewSpec(
+    fsm.Events{
+        {Name: "open", Src: []string{"closed"}, Dst: "open"},
+        {Name: "close", Src: []string{"open"}, Dst: "closed"},
+    },
+    fsm.Callbacks{
+        "enter_state": func(_ context.Context, e *fsm.Event) {
+            fmt.Println("the door is", e.Dst)
+        },
+    },
+)
+
+func main() {
+    for i := 0; i < 3; i++ {
+        door := fsm.NewFSMFromSpec("closed", doorSpec)
+        if err := door.Event(context.Background(), "open"); err != nil {
+            fmt.Println(err)
+        }
+    }
+}
+```
+
+A `Spec` is immutable and holds no state of its own, so any number of machines
+can use it, also concurrently. Everything that changes while a machine runs is
+kept per machine.
+
 # License
 
 FSM is licensed under Apache License 2.0

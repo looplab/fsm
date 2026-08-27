@@ -32,13 +32,14 @@ func VisualizeForMermaidWithGraphType(fsm *FSM, graphType MermaidDiagramType) (s
 func visualizeForMermaidAsStateDiagram(fsm *FSM) string {
 	var buf bytes.Buffer
 
-	sortedTransitionKeys := getSortedTransitionKeys(fsm.transitions)
+	transitions := fsm.spec.transitionTable()
+	sortedTransitionKeys := getSortedTransitionKeys(transitions)
 
 	buf.WriteString("stateDiagram-v2\n")
-	buf.WriteString(fmt.Sprintln(`    [*] -->`, fsm.current))
+	buf.WriteString(fmt.Sprintln(`    [*] -->`, fsm.Current()))
 
 	for _, k := range sortedTransitionKeys {
-		v := fsm.transitions[k]
+		v := transitions[k]
 		buf.WriteString(fmt.Sprintf(`    %s --> %s: %s`, k.src, v, k.event))
 		buf.WriteString("\n")
 	}
@@ -50,13 +51,15 @@ func visualizeForMermaidAsStateDiagram(fsm *FSM) string {
 func visualizeForMermaidAsFlowChart(fsm *FSM) string {
 	var buf bytes.Buffer
 
-	sortedTransitionKeys := getSortedTransitionKeys(fsm.transitions)
-	sortedStates, statesToIDMap := getSortedStates(fsm.transitions)
+	transitions := fsm.spec.transitionTable()
+	current := fsm.Current()
+	sortedTransitionKeys := getSortedTransitionKeys(transitions)
+	sortedStates, statesToIDMap := getSortedStates(transitions)
 
 	writeFlowChartGraphType(&buf)
 	writeFlowChartStates(&buf, sortedStates, statesToIDMap)
-	writeFlowChartTransitions(&buf, fsm.transitions, sortedTransitionKeys, statesToIDMap)
-	writeFlowChartHighlightCurrent(&buf, fsm.current, statesToIDMap)
+	writeFlowChartTransitions(&buf, transitions, sortedTransitionKeys, statesToIDMap)
+	writeFlowChartHighlightCurrent(&buf, current, statesToIDMap)
 
 	return buf.String()
 }

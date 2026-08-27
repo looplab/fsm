@@ -9,13 +9,16 @@ import (
 func Visualize(fsm *FSM) string {
 	var buf bytes.Buffer
 
+	transitions := fsm.spec.transitionTable()
+	current := fsm.Current()
+
 	// we sort the key alphabetically to have a reproducible graph output
-	sortedEKeys := getSortedTransitionKeys(fsm.transitions)
-	sortedStateKeys, _ := getSortedStates(fsm.transitions)
+	sortedEKeys := getSortedTransitionKeys(transitions)
+	sortedStateKeys, _ := getSortedStates(transitions)
 
 	writeHeaderLine(&buf)
-	writeTransitions(&buf, sortedEKeys, fsm.transitions)
-	writeStates(&buf, fsm.current, sortedStateKeys)
+	writeTransitions(&buf, sortedEKeys, transitions)
+	writeStates(&buf, current, sortedStateKeys)
 	writeFooter(&buf)
 
 	return buf.String()
