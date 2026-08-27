@@ -810,6 +810,7 @@ func TestTransitionInCallbacks(t *testing.T) {
 func TestContextInCallbacks(t *testing.T) {
 	var fsm *FSM
 	var enterEndAsyncWorkDone = make(chan struct{})
+	ctx, cancel := context.WithCancel(context.Background())
 	fsm = NewFSM(
 		"start",
 		Events{
@@ -824,6 +825,11 @@ func TestContextInCallbacks(t *testing.T) {
 					close(enterEndAsyncWorkDone)
 				}()
 
+				// Cancel from within the callback so the cancellation always
+				// happens after the transition has begun, instead of racing
+				// the transition's context check.
+				cancel()
+
 				<-ctx.Done()
 				if err := e.FSM.Event(ctx, "finish"); err != nil {
 					e.Err = fmt.Errorf("transitioning to the finished state failed: %w", err)
@@ -832,10 +838,6 @@ func TestContextInCallbacks(t *testing.T) {
 		},
 	)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	go func() {
-		cancel()
-	}()
 	err := fsm.Event(ctx, "run")
 	if !errors.Is(err, context.Canceled) {
 		t.Errorf("expected 'context canceled' error, got %v", err)
